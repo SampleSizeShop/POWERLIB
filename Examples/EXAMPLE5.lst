@@ -1,0 +1,213 @@
+EXAMPLE5.SAS--Power for a test of the interaction of between and within factors in a multivariat
+                    Compares power of tests when SIGMA most favorable to UN                     
+                                                                                                
+                                                                                                
+                                                                                                
+                   WARNING 1: Rank(C*BETA*U) > 1, so COLLAPSE option ignored.                   
+                                                                                                
+                                                                                                
+                                                                                                
+WARNING 12: For univariate repeated measures, U must be proportional to an orthonormal matrix   
+[U`U = cI] and orthogonal to a Px1 column of 1's [U`1 = 0]. The U matrix specified does not have
+these properties.  A new U matrix with these properties was created from your input and used in 
+UNIREP calculations:                                                                            
+                                               U                                                
+                                                                                                
+                                       0.7071068 0.4082483                                      
+                                       -0.707107 0.4082483                                      
+                                               0 -0.816497                                      
+                                                                                                
+                                                                                                
+                                                                                                
+POWER CALCULATION WARNING 18: The approximate expected value of estimated epsilon was truncated 
+down to 1. This occurred 20 time(s).                                                            
+                                                                                                
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+EXAMPLE5.SAS--Power for a test of the interaction of between and within factors in a multivariat
+                    Compares power of tests when SIGMA most favorable to UN                     
+                                                                                                
+                               ****REQUESTED PRINTED MATRICES***                                
+                                                                                                
+                                                                                                
+                                            ESSENCEX                                            
+                                                                                                
+                                    1         0         0         0                             
+                                    0         1         0         0                             
+                                    0         0         1         0                             
+                                    0         0         0         1                             
+                                                                                                
+                                                                                                
+                                              BETA                                              
+                                                                                                
+                                         1         0         0                                  
+                                         0         0         0                                  
+                                         0         0         0                                  
+                                         0         0         0                                  
+                                                                                                
+                                                                                                
+                                             SIGMA                                              
+                                                                                                
+                                         1       0.4       0.4                                  
+                                       0.4         1       0.4                                  
+                                       0.4       0.4         1                                  
+                                                                                                
+                                                                                                
+                                              RHO                                               
+                                                                                                
+                                         1       0.4       0.4                                  
+                                       0.4         1       0.4                                  
+                                       0.4       0.4         1                                  
+                                                                                                
+                                                                                                
+                                               C                                                
+                                                                                                
+                                    1        -1         0         0                             
+                                    1         0        -1         0                             
+                                    1         0         0        -1                             
+                                                                                                
+                                                                                                
+                                               U                                                
+                                                                                                
+                                              1         1                                       
+                                             -1         0                                       
+                                              0        -1                                       
+                                                                                                
+                                                                                                
+ 
+ 
+ 
+ 
+EXAMPLE5.SAS--Power for a test of the interaction of between and within factors in a multivariat
+                    Compares power of tests when SIGMA most favorable to UN                     
+                                                                                                
+                                          C * BETA * U                                          
+                                                                                                
+                                      0.7071068 0.4082483                                       
+                                      0.7071068 0.4082483                                       
+                                      0.7071068 0.4082483                                       
+                                                                                                
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+EXAMPLE5.SAS--Power for a test of the interaction of between and within factors in a multivariat
+                    Compares power of tests when SIGMA most favorable to UN                     
+                                                                                                
+                                   ****POWER CALCULATIONS****                                   
+                                           HOLDPOWER                                            
+      SIGSCAL  BETASCAL   TOTAL_N POWER_HLT POWER_PBT POWER_WLK   EPSILON  EXEPS_UN  POWER_UN   
+                                                                                                
+            1         0        20      0.01      0.01      0.01         1         1      0.01   
+            1         0        40      0.01      0.01      0.01         1         1      0.01   
+            1       0.5        20     0.019      0.02     0.021         1         1     0.021   
+            1       0.5        40     0.039      0.04     0.041         1         1     0.042   
+            1         1        20     0.066     0.068     0.075         1         1     0.081   
+            1         1        40     0.242     0.224     0.247         1         1     0.266   
+            1       1.5        20     0.202      0.18     0.218         1         1     0.259   
+            1       1.5        40     0.683      0.58      0.66         1         1     0.727   
+            1         2        20     0.451     0.344      0.45         1         1      0.56   
+            1         2        40     0.955     0.849     0.929         1         1      0.97   
+            2         0        20      0.01      0.01      0.01         1         1      0.01   
+            2         0        40      0.01      0.01      0.01         1         1      0.01   
+            2       0.5        20     0.014     0.015     0.015         1         1     0.015   
+            2       0.5        40     0.022     0.022     0.023         1         1     0.023   
+            2         1        20     0.032     0.033     0.035         1         1     0.037   
+            2         1        40     0.089     0.088     0.094         1         1     0.097   
+            2       1.5        20     0.077     0.078     0.087         1         1     0.095   
+            2       1.5        40     0.287     0.262     0.291         1         1     0.316   
+            2         2        20      0.17     0.156     0.186         1         1     0.218   
+            2         2        40     0.607     0.518      0.59         1         1     0.651   
+                                                                                                
+                                           HOLDPOWER                                            
+         EXEPS_HF UMETHOD_HF  POWER_HF  EXEPS_GG UMETHOD_GG  POWER_GG EXEPS_BOX POWER_BOX       
+                                                                                                
+            1.189          2      0.01     0.895          2     0.007       0.5     0.001       
+            1.083          2      0.01     0.949          2     0.009       0.5     0.001       
+            1.189          2     0.021     0.895          2     0.016       0.5     0.002       
+            1.083          2     0.042     0.949          2     0.037       0.5     0.006       
+            1.189          2     0.081     0.895          2     0.065       0.5     0.011       
+            1.083          2     0.266     0.949          2     0.249       0.5     0.076       
+            1.189          2     0.259     0.895          2     0.221       0.5      0.06       
+            1.083          2     0.727     0.949          2     0.709       0.5     0.413       
+            1.189          2      0.56     0.895          2     0.509       0.5     0.215       
+            1.083          2      0.97     0.949          2     0.966       0.5     0.849       
+            1.189          2      0.01     0.895          2     0.007       0.5     0.001       
+            1.083          2      0.01     0.949          2     0.009       0.5     0.001       
+            1.189          2     0.015     0.895          2     0.011       0.5     0.001       
+            1.083          2     0.023     0.949          2      0.02       0.5     0.003       
+            1.189          2     0.037     0.895          2     0.028       0.5     0.004       
+            1.083          2     0.097     0.949          2     0.089       0.5     0.018       
+            1.189          2     0.095     0.895          2     0.076       0.5     0.014       
+            1.083          2     0.316     0.949          2     0.298       0.5     0.099       
+            1.189          2     0.218     0.895          2     0.184       0.5     0.047       
+            1.083          2     0.651     0.949          2     0.631       0.5     0.333       

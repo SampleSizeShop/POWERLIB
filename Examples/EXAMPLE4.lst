@@ -1,0 +1,66 @@
+                 EXAMPLE4.SAS -- Confidence limits for a univariate model test
+           Creates Figure 1 in Taylor and Muller, 1995, Amer Statistician, 49, p43-47
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test, specify
+OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT the
+standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 31 time(s).
+
+
+                      The results have been stored in SAS file WORK.PWRDT1
+                 EXAMPLE4.SAS -- Confidence limits for a univariate model test
+           Creates Figure 1 in Taylor and Muller, 1995, Amer Statistician, 49, p43-47
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test, specify
+OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT the
+standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 8 time(s).
+
+
+                      The results have been stored in SAS file WORK.PWRDT2
+                 EXAMPLE4.SAS -- Confidence limits for a univariate model test
+           Creates Figure 1 in Taylor and Muller, 1995, Amer Statistician, 49, p43-47
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test, specify
+OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT the
+standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 29 time(s).
+
+
+                      The results have been stored in SAS file WORK.PWRDT3
