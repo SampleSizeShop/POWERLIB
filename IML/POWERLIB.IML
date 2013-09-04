@@ -205,6 +205,9 @@
 *             The COLLAPSE option produces one column for all 3.        *;
 *             UN, GG, HF, and BOX powers are calculated if requested.   *;
 *                                                                       *;
+*							NONCENCL, compute confidence limits		OFF									*; 
+*											for noncentrality																	*;
+*																																				*;	
 *             LTFR, allow less than full rank                           *;
 *                   ESSENCEX matrix                 OFF                 *;
 *                                                                       *;
@@ -215,6 +218,9 @@
 *                    from user for UNIREP                               *;
 *                    calculations - program creates                     *;
 *                    orthonormal U for user         OFF                 *;
+*																																				*;
+*							UNIFORCE, allow non orthonormal U			OFF									*;
+*										from user																						*;					
 *                                                                       *;
 *           b) Print/options for output power matrix (SAS dataset)      *;
 *                                                                       *;
@@ -757,8 +763,8 @@ OPTWARNPRINTLBL    = {WARN}`;
 ***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
 OPTPOWERCALC1      = {    1     1   1   1  0  0  1  0  }`;
 OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF GG BOX}`;
-OPTPOWERCALC2      = { 0       0        0  }`;
-OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU}`;
+OPTPOWERCALC2      = { 0       0        0        0   }`;
+OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU  UNIFORCE}`;
 
 ***OPTPOWERMAT1 and OPTPOWERMAT2 specify what includeD in the output matrix;
 IF SIGTYPE=0 THEN
@@ -1536,6 +1542,16 @@ IF RANKM ^= A THEN DO;
 
 ***G.5) Create Orthonormal U for UNIREP test power calculations;
 
+
+IF OPTPOWERCALC2[4,1]=1 THEN DO;
+		NOTE = CONCAT ("WARNING 17: You have specified the option UNIFORCE, which allows power ",
+						"calculations to continue without a U matrix that is orthonormal ",
+						"and orthogonal to a Px1 column of 1's. This option should be used ", 
+						"WITH CAUTION. The user accepts responsibility for the results being ", 
+						"the ones desired."); 
+		PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+    END;
+
 UTEMP = U;
 IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) | 
    (OPTPOWERCALC1[7,1] = 1) | (OPTPOWERCALC1[8,1] = 1) THEN DO;
@@ -1544,28 +1560,23 @@ IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) |
         IF ( MAX(UDIF) > SQRT(TOLERANCE) ) |  
            ( (B > 1) * ( MAX( U`*J(P,1,1) ) > SQRT(TOLERANCE) ) > 0 ) 
            THEN DO;
-                IF OPTPOWERCALC2[3,1] = 0 THEN DO;
-                        NOTE = CONCAT("ERROR 50: For univariate repeated ", 
-                                      "measures, U must be proportional ",
-                                      "to an orthonormal matrix [U`U = cI] ",
-                                      "and orthogonal to a Px1 column ",
-                                      "of 1's [U`1 = 0].  The U matrix ",
-                                      "specified does not have these ", 
-                                      "properties.  To have this program ",
-                                      "provide a U matrix with the required",
-                                      "properties, specify OPT_ON= {ORTHU}; ",
-                                      " If you do not wish to compute power",
-                                      " for UNIREP tests, specify OPT_OFF = ",
-                                      "{GG HF UN BOX};");
+                IF OPTPOWERCALC2[3,1] = 0 & OPTPOWERCALC2[4,1]=0 THEN DO;
+                        NOTE = CONCAT("ERROR 50: For univariate repeated measures, U must be proportional ",
+                                      "to an orthonormal matrix [U`U = cI] and orthogonal to a Px1 column ",
+                                      "of 1's [U`1 = 0].  The U matrix specified does not have these ", 
+                                      "properties.  To have this program provide a U matrix with the required ",
+                                      "properties, specify OPT_ON= {ORTHU}; . To allow power calculations to continue",
+                                      " without a U matrix with these properties, specify OPT_ON= {UNIFORCE}; .",
+                                      " If you do not wish to compute power for UNIREP tests, specify OPT_OFF = ",
+                                      "{GG HF UN BOX}; .");
                         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] ,U ;
                         GO TO ERROREND;
                         END;
-                IF OPTPOWERCALC2[3,1] = 1 THEN DO;      
+                IF (OPTPOWERCALC2[3,1] = 1) & (OPTPOWERCALC2[4,1] = 0) THEN DO;      
                         CALL GSORTH(UORTH, T, FLAG, U);
                         UTEMP = UORTH;
-        		IF ( (B > 1) * ( MAX( UORTH`*J(P,1,1) ) > 
-        		    SQRT(TOLERANCE) ) > 0 ) THEN DO;
-        			NOTE = CONCAT("ERROR 51: You have ",
+        					IF ( (B > 1) * ( MAX( UORTH`*J(P,1,1) ) > SQRT(TOLERANCE) ) > 0 ) THEN DO;
+        						NOTE = CONCAT("ERROR 51: You have ",
         			              "specified option ORTHU so ",
         			              "that the program will ",
         			              "provide a U ",
@@ -1698,7 +1709,7 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
         	NOTE = CONCAT("WARNING 14: You have specified a design ",
                         "with non-integer N.  In doing so, you are ",
                         "responsible for correct interpretation of ",
-                        "the results.")
+                        "the results.");
           PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
           END;    
           
