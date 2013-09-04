@@ -1,5 +1,5 @@
 *************************************************************************;
-*                        January 16, 2009                               *;
+*                        April 24, 2009                                 *;
 *************************************************************************;
 *  23456789A123456789B123456789C123456789D123456789E123456789F123456789G ;
 *************************************************************************;
@@ -135,18 +135,17 @@
 *             = 3  Rao (1951) two moment null approx + OS noncen mult   *;
 *             = 4  Rao (1951) two moment null approx + OS noncen mult   *;
 *                                                                       *;
-*    (13) IP_PLAN, (scalar)						                                  *;
+*    (13) IP_PLAN, (scalar)	indicates whether power is computed					*;
+*						within the context of planning an interval pilot						*;
 *	         =1 if desired power is calculated when planning an internal	*;
 *	            pilot study							                                  *;
 *	         =0 otherwise							                                    *;
 *									                                                      *;
-*    (14) N_IP, (scalar)						                                    *;
-*		       NEED TO FILL IN THIS DESCRIPTION - ASK KEITH		              *;
-*		      (required if IP_PLAN=1)					                              *;
+*    (14) N_IP, (scalar)	# of observations planned for the internal		*;
+*					pilot of the future study	(required if IP_PLAN=1)					    *;
 *									                                                      *;
-*    (15) RANK_IP, (scalar)						                                  *;
-*		      NEED TO FILL IN THIS DESCRIPTION - ASK KEITH		              *;
-*		      (required if IP_PLAN=1)					                              *;
+*    (15) RANK_IP, (scalar) rank of the design matrix used in						*;
+*					the future study (required if IP_PLAN=1)					            *;
 *                                                                       *;
 *    The following 5 parameters control creation of confidence intervals*;
 *    for power values of univariate, UNIREP, and MULTIREP tests.        *; 
@@ -230,7 +229,15 @@
 *              UCDF       Method used for UNIREP test CDF       OFF     *;
 *              UMETHOD    Method used for approx expected value OFF     *;
 *                         of epilon estimator in GG and HF      OFF     *;
+*							 MMETHOD		Method used for MULTIREP approx			  OFF			*; 
 *                                                                       *;
+*							 All of the following are OFF if IP_PLAN=0, otherwise			*;
+*							 they appear as below:																		*;
+*																																				*;
+*							 IP_PLAN		Indictor for internal pilot power			ON			*;
+*							 N_IP				Sample size of future study in IP			OFF			*;
+*							 RANK_IP		Rank of design matrix in future study OFF			*;				 
+*																																				*;
 *              All of the following are OFF if CLTYPE < 1, otherwise    *;
 *              they appear as below:                                    *;
 *                                                                       *;      
@@ -599,11 +606,11 @@ IF NROW(ALPHA_CU) = 0 THEN DO;
         END;
         
 IF NROW(SIGTYPE) = 0 THEN DO;
-        SIGTYPE = 0 ;
+				IF CLTYPE>=1 THEN SIGTYPE=1;
+        ELSE SIGTYPE = 0 ;
         HITLIST = HITLIST // {SIGTYPE};
         END;   
      
-        
 IF NROW(DSNAME) = 0 THEN DO;
         DSNAME = {WORK DODFAULT WORK};
         HITLIST = HITLIST // {DSNAME};
@@ -863,13 +870,16 @@ IF (( NROW(OPT_ONTEMP) > 0) | (NROW(OPT_OFFTEMP) > 0 )) THEN DO; *Check;
 IF ((NROW(OPT_ONTEMP) > 0) | (NROW(OPT_OFFTEMP) > 0)) THEN DO;
       CALL _SETOPT(OPTMATPRINT,   OPTMATPRINTLBL,   OPT_ONTEMP, OPT_OFFTEMP);
       CALL _SETOPT(OPTWARNPRINT,  OPTWARNPRINTLBL,  OPT_ONTEMP, OPT_OFFTEMP);
-      CALL _SETOPT(OPTPOWERCALC1, OPTPOWERCALC1LBL, OPT_ONTEMP, OPT_OFFTEMP);
+      CALL _SETOPT(OPTPOWERCALC1, OPTPOWERCALC1LBL, OPT_ONTEMP, OPT_OFFTEMP); 
       CALL _SETOPT(OPTPOWERCALC2, OPTPOWERCALC2LBL, OPT_ONTEMP, OPT_OFFTEMP);
       CALL _SETOPT(OPTPOWERMAT1,  OPTPOWERMAT1LBL,  OPT_ONTEMP, OPT_OFFTEMP);
       CALL _SETOPT(OPTPOWERMAT2,  OPTPOWERMAT2LBL,  OPT_ONTEMP, OPT_OFFTEMP);
       CALL _SETOPT(OPTPRINT,      OPTPRINTLBL,      OPT_ONTEMP, OPT_OFFTEMP);
       CALL _SETOPT(OPTDATASET,    OPTDATASETLBL,    OPT_ONTEMP, OPT_OFFTEMP);
       END;
+
+
+
 
 ***E.4) Reset IP_PLAN, N_IP, RANK_IP options off when IP_PLAN=0;
 
@@ -893,7 +903,7 @@ IF (CLTYPE < 1) & OPTPOWERMAT2[5,1]=1 THEN DO;
         END;
 	
           
-***E.6) Extract requested variable names for output;
+***E.5) Extract requested variable names for output;
 
 KEEPOUT = LOC(OPTPOWERMAT1);
 
@@ -901,7 +911,7 @@ IF NROW(KEEPOUT) > 0 THEN KEEPOUTLBL = OPTPOWERMAT1LBL[KEEPOUT, ]`;
 ELSE IF NROW(KEEPOUTLBL) > 0 THEN FREE KEEPOUTLBL;
 
 
-***E.7) Insure that at least one test chosen;
+***E.6) Insure that at least one test chosen;
 
 IF ANY(OPTPOWERCALC1) ^= 1 THEN DO;
         NOTE = CONCAT("ERROR 9: OPT_OFF combined with defaults implies ", 
@@ -914,6 +924,7 @@ IF ANY(OPTPOWERCALC1) ^= 1 THEN DO;
 
 ***E.7) Identify special cases;
 
+CFLAG=0;
 IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
 
         IF S > 1 THEN DO;
@@ -939,6 +950,7 @@ IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
         IF (B >1) & (A = 1) THEN DO;  *other S=1 special case;
                 IF MAX(OPTPOWERCALC1[{2}:{4}]) = 0 THEN DO; *No mult request;
                         OPTPOWERCALC1[1,1] = 0;
+                        CFLAG=1;
                         IF ANY(OPTPOWERCALC1) ^= 1 THEN DO;
                             NOTE = CONCAT("ERROR 9: OPT_OFF combined with ", 
                                           "defaults implies no power ",
@@ -948,7 +960,7 @@ IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
                             GO TO ERROREND;
                             END;
                         END;
-                   ELSE DO; *At least one mult request;
+                   ELSE DO; *At least one mult request;               
                         OPTPOWERCALC1[{2}:{4},1] = 0;  
                         NOTE = CONCAT("WARNING 3: A = 1, B > 1, so that all ",
                                       "MULTIREP tests coincide.  Since ", 
@@ -963,10 +975,10 @@ IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
                 END; *(B >1) & (A = 1);
 
         END; *COLLAPSE is "on";
-        
+     
         ***COLLAPSE is "off" treated in following;
-IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & OPTWARNPRINT THEN DO;
-        IF (B = 1) THEN DO;
+IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & OPTWARNPRINT &CFLAG=0 THEN DO;
+        IF (B = 1) THEN DO;     
                 NOTE = CONCAT("WARNING 4: B = 1, so that all tests ",
                               "coincide (univariate case). To print ",
                               "powers with one overall heading of POWER ",
@@ -1593,133 +1605,123 @@ IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) |
 
 POWERCASE = 0;
 
+***H.1) select sigma;
 
-***H.1) Select alpha;
-
-DO ALPHACNT = 1 TO NROW(ALPHATEMP);
-  ALPHASCALAR = ALPHATEMP[ALPHACNT,1];
-
-
-***H.2) select sigma;
-
-  DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
-
-    SIGMASCALAR = SIGSCALTEMP[SIGMACNT,1];
-    *** Compute sigscaled covariance matrix;
-    SIGMASCALED1 = SIGMA # SIGMASCALAR;
-    *** Compute rho from sigscaled covariance matrix;
-    VARSCALED = VECDIAG(SIGMASCALED1);
-    IF MIN(VARSCALED) <= TOLERANCE THEN DO;
-      NOTE = COMPBL(CONCAT("ERROR 52: The covariance matrix formed with ", 
-                           "SIGSCAL element ", CHAR(SIGMACNT,1), 
-                           " has a variance <= TOLERANCE (too small)."));
-      PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGSCAL;
-      GO TO ERROREND;
-      END;
-    STDEVSCALED = SQRT(VARSCALED);
-    RHOSCALED1 = (DIAG(J(P,1,1) / (STDEVSCALED))) * SIGMASCALED1 
+DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
+	SIGMASCALAR = SIGSCALTEMP[SIGMACNT,1];
+	*** Compute sigscaled covariance matrix;
+	SIGMASCALED1 = SIGMA # SIGMASCALAR;
+  *** Compute rho from sigscaled covariance matrix;
+  VARSCALED = VECDIAG(SIGMASCALED1);
+  IF MIN(VARSCALED) <= TOLERANCE THEN DO;
+  	NOTE = COMPBL(CONCAT("ERROR 52: The covariance matrix formed with ", 
+                         "SIGSCAL element ", CHAR(SIGMACNT,1), 
+                         " has a variance <= TOLERANCE (too small)."));
+		PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGSCAL;
+  	GO TO ERROREND;
+  	END;
+  STDEVSCALED = SQRT(VARSCALED);
+  RHOSCALED1 = (DIAG(J(P,1,1) / (STDEVSCALED))) * SIGMASCALED1 
                         * (DIAG(J(P,1,1) / (STDEVSCALED)));
 
+***H.2) Create new rhos;
 
-***H.3) Create new rhos;
-
-    DO RHOCNT = 1 TO NROW(RHOSCALTEMP);
-      RHOSCALAR = RHOSCALTEMP[RHOCNT,1];
-      RHOJUNK = (RHOSCALED1 # RHOSCALAR);       *** Diagonal elements not =1;
-      RHOOFFDIAG = RHOJUNK - DIAG(VECDIAG(RHOJUNK));  *** Off-diagonals;
-      RHOOFFDIAG = (RHOOFFDIAG + RHOOFFDIAG`) / 2;    ***To insure symmetry;
-      IF MAX(ABS(RHOOFFDIAG)) > 1 THEN DO;
-        NOTE = COMPBL(CONCAT("ERROR 53: SIGSCAL = ", CHAR(SIGMASCALAR,1), 
-                             " and RHOSCAL = ", CHAR(RHOSCALAR,1), 
-                             " produce a correlation with absolute ",
-                             "value > 1 ."));
-        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGSCAL , RHOSCAL;
-        GO TO ERROREND;
-        END;
-      IF MAX(ABS(RHOOFFDIAG)) = 1 THEN DO;
-        NOTE = COMPBL(CONCAT("WARNING 13: SIGSCAL = ", CHAR(SIGMASCALAR,1), 
-                             " and RHOSCAL = ", CHAR(RHOSCALAR,1), 
-                             " produce a correlation with absolute ",
-                             "value = 1 ."));
-        POWERWARN[20,1] = POWERWARN[20,1] + 1;
-        IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "]
+	DO RHOCNT = 1 TO NROW(RHOSCALTEMP);
+  	RHOSCALAR = RHOSCALTEMP[RHOCNT,1];
+    RHOJUNK = (RHOSCALED1 # RHOSCALAR);       *** Diagonal elements not =1;
+    RHOOFFDIAG = RHOJUNK - DIAG(VECDIAG(RHOJUNK));  *** Off-diagonals;
+    RHOOFFDIAG = (RHOOFFDIAG + RHOOFFDIAG`) / 2;    ***To insure symmetry;
+    IF MAX(ABS(RHOOFFDIAG)) > 1 THEN DO;
+    	NOTE = COMPBL(CONCAT("ERROR 53: SIGSCAL = ", CHAR(SIGMASCALAR,1), 
+                           " and RHOSCAL = ", CHAR(RHOSCALAR,1), 
+                           " produce a correlation with absolute ",
+                           "value > 1 ."));
+    	PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGSCAL , RHOSCAL;
+    	GO TO ERROREND;
+    	END;
+ 		IF MAX(ABS(RHOOFFDIAG)) = 1 THEN DO;
+      NOTE = COMPBL(CONCAT("WARNING 13: SIGSCAL = ", CHAR(SIGMASCALAR,1), 
+                           " and RHOSCAL = ", CHAR(RHOSCALAR,1), 
+                           " produce a correlation with absolute ",
+                           "value = 1 ."));
+      POWERWARN[20,1] = POWERWARN[20,1] + 1;
+      IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "]
                                        , SIGSCAL , RHOSCAL;
-        GO TO ERROREND;
-        END;
-      RHOSCALED2 = RHOOFFDIAG + I(P);
+      GO TO ERROREND;
+      END;
+    RHOSCALED2 = RHOOFFDIAG + I(P);
       
-      *** Create new sigma from rho;
+    *** Create new sigma from rho;
       
-      SIGMASCALED2 = DIAG(STDEVSCALED) * RHOSCALED2 * DIAG(STDEVSCALED);
-      SIGMASTAR = UTEMP` * SIGMASCALED2 * UTEMP;
-      SIGMASTAR = (SIGMASTAR + SIGMASTAR`) / 2;   ***To insure symmetry;
-      CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);          
-      SIGMASTARLBL = {"U`*SIGMA*U"};
-      RANKSIGMASTAR = _RANKSYMM(SIGMASTAR, SIGMASTARLBL);
-      IF RANKSIGMASTAR ^= B THEN DO;
-        NOTE = COMPBL(CONCAT("ERROR 54: SIGMASTAR = U`*SIGMA*U must be ", 
-                             "full rank to ensure testability of CBETAU = ",
-                             "THETA0. SIGMASTAR is", CHAR(B,1), 
-                             "x", CHAR(B,1), 
-                             "but has rank ", CHAR(RANKSIGMASTAR), "."));
-        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGMASTAR;
-        GO TO ERROREND;
-        END;
+    SIGMASCALED2 = DIAG(STDEVSCALED) * RHOSCALED2 * DIAG(STDEVSCALED);
+    SIGMASTAR = UTEMP` * SIGMASCALED2 * UTEMP;
+    SIGMASTAR = (SIGMASTAR + SIGMASTAR`) / 2;   ***To insure symmetry;
+    CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);          
+    SIGMASTARLBL = {"U`*SIGMA*U"};
+    RANKSIGMASTAR = _RANKSYMM(SIGMASTAR, SIGMASTARLBL);
+    IF RANKSIGMASTAR ^= B THEN DO;
+      NOTE = COMPBL(CONCAT("ERROR 54: SIGMASTAR = U`*SIGMA*U must be ", 
+                           "full rank to ensure testability of CBETAU = ",
+                           "THETA0. SIGMASTAR is", CHAR(B,1), 
+                           "x", CHAR(B,1),
+                           "but has rank ", CHAR(RANKSIGMASTAR), "."));
+      PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGMASTAR;
+      GO TO ERROREND;
+      END;
 
-***H.8.a) Start UNIREP power calcs, if any;
+***H.3) Start UNIREP power calcs, if any;
           
-          IF MAX( OPTPOWERCALC1[ {5}:{8} ] ) THEN DO;
-             CALL _FIRSTUNI(D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
-                             SIGMASTAR, B);
-              *** Find first requested UNIREP test so include epsilon;
-              FIRSTUNI= {4} + MIN( LOC( OPTPOWERCALC1[ {5}:{8} ] ) ) ;
-              END;
-
+		IF MAX( OPTPOWERCALC1[ {5}:{8} ] ) THEN DO;
+    	CALL _FIRSTUNI(D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3, SIGMASTAR, B);
+    	*** Find first requested UNIREP test so include epsilon;
+      FIRSTUNI= {4} + MIN( LOC( OPTPOWERCALC1[ {5}:{8} ] ) ) ;
+      END;
 
 ***H.4) Select Beta;
        
-      DO BETACNT = 1 TO NROW(BETASCALTEMP);
+  	DO BETACNT = 1 TO NROW(BETASCALTEMP);
 
-        BETASCALAR = BETASCALTEMP[BETACNT,1];
-        BETASCALED = BETA # BETASCALAR;
-        THETA  = C * BETASCALED * UTEMP;
-        ESSH = (THETA - THETA0)` * SOLVE(M, I(NROW(M))) * (THETA - THETA0);
+    	BETASCALAR = BETASCALTEMP[BETACNT,1];
+      BETASCALED = BETA # BETASCALAR;
+      THETA  = C * BETASCALED * UTEMP;
+      ESSH = (THETA - THETA0)` * SOLVE(M, I(NROW(M))) * (THETA - THETA0);
         
 
 ***H.5) Select N;
                         
-        DO NCNT = 1 TO NROW(REPNTEMP);
+   		DO NCNT = 1 TO NROW(REPNTEMP);
    
-          POWERCASE = POWERCASE + 1;
-          N = REPNTEMP[NCNT,1] # NROW(ESSENCEX);
+      	POWERCASE = POWERCASE + 1;
+        N = REPNTEMP[NCNT,1] # NROW(ESSENCEX);
         
-          IF (INT(N) ^= N) & OPTWARNPRINT THEN DO;
-                NOTE = CONCAT("WARNING 14: You have specified a design ",
-                              "with non-integer N.  In doing so, you are ",
-                              "responsible for correct interpretation of ",
-                              "the results.");
-                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
-                END;    
+        IF (INT(N) ^= N) & OPTWARNPRINT THEN DO;
+        	NOTE = CONCAT("WARNING 14: You have specified a design ",
+                        "with non-integer N.  In doing so, you are ",
+                        "responsible for correct interpretation of ",
+                        "the results.")
+          PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+          END;    
           
-          E = SIGMASTAR # (N - R);  ***Not used if (N - R) <= 0 ;
-          H = REPNTEMP[NCNT,1] # ESSH;
+        E = SIGMASTAR # (N - R);  ***Not used if (N - R) <= 0 ;
+        H = REPNTEMP[NCNT,1] # ESSH;
 
 
 ***H.6) Eigenvalues for H*INV(E);
      
-     IF MAX( OPTPOWERCALC1[ {2}:{4} ] ) THEN DO;     
-          IF (N - R) <= 0 THEN DO;
-            EVAL = J(S,1,.);
-            RHOSQ = . ;
-            D = 1;
-            MTP = B;
-            ***EPS = .;
-            DEIGVAL = .;
-            SLAM1 = .;
-            SLAM2 = .; 
-            SLAM3 = .;
-            CANCORRMAX=.;
-            END;
+				IF MAX( OPTPOWERCALC1[ {1}:{4} ] ) THEN DO;  
+ 
+        	IF (N - R) <= 0 THEN DO;
+          	EVAL = J(S,1,.);
+          	RHOSQ = . ;
+          	D = 1;
+          	MTP = B;
+          	***EPS = .;
+          	DEIGVAL = .;
+          	SLAM1 = .;
+          	SLAM2 = .; 
+          	SLAM3 = .;
+          	CANCORRMAX=.;
+          	END;
           ELSE DO;
             FINV = INV(HALF(E))`;
             HEIORTH = FINV * H * FINV`;
@@ -1737,42 +1739,18 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
             END;
           END; 
 
+***H.7) Select alpha;
 
-***H.1) Select alpha;
+				DO ALPHACNT = 1 TO NROW(ALPHATEMP);
+  					ALPHASCALAR = ALPHATEMP[ALPHACNT,1];
 
-DO ALPHACNT = 1 TO NROW(ALPHATEMP);
-  ALPHASCALAR = ALPHATEMP[ALPHACNT,1];
-
-***H.7) Initialize output          
+***H.8) Initialize output          
 ***     Set maximum possible output for power table;
 ***     Then delete unrequested options;
-
-***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
-OPTPOWERCALC1      = {    1     1   1   1  0  0  1  0  }`;
-OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF GG BOX}`;
-OPTPOWERCALC2      = { 0       0        0  }`;
-OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU}`;
-
-***OPTPOWERMAT1 and OPTPOWERMAT2 specify what includeD in the output matrix;
-IF SIGTYPE=0 THEN
-			OPTPOWERMAT1A      
-        = {    0       1       1      0        1         1       0    		0}`;
-ELSE IF SIGTYPE=1 THEN OPTPOWERMAT1A      
-        = {    0       1       1      0        1         1       0    		1}`;
-OPTPOWERMAT1ALBL   
-        = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ  SIGTYPE}`;
-        
-IF CLTYPE < 1 THEN
-     OPTPOWERMAT1B = {   0      0      0        0        0   }`;
-ELSE OPTPOWERMAT1B = {   1      0      0        1        1   }`;
-OPTPOWERMAT1BLBL   = {CLTYPE N_EST RANK_EST ALPHA_CL ALPHA_CU}`;
-
-IF IP_PLAN = 0 THEN
-     OPTPOWERMAT1C = {   0      0      0  }`;
-ELSE OPTPOWERMAT1C = {   1      0      0  }`;
-OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
-          
-          OUTPUT = POWERCASE || ALPHASCALAR || SIGMASCALAR || RHOSCALAR || BETASCALAR  || N || CANCORRMAX || SIGTYPE;
+ 
+					IF MAX( OPTPOWERCALC1[ {1}:{4} ] ) THEN        
+          	OUTPUT = POWERCASE || ALPHASCALAR || SIGMASCALAR || RHOSCALAR || BETASCALAR  || N || CANCORRMAX || SIGTYPE;
+          ELSE OUTPUT = POWERCASE || ALPHASCALAR || SIGMASCALAR || RHOSCALAR || BETASCALAR  || N || {.} || SIGTYPE;
           IF CLTYPE<1 THEN
           			OUTPUT=OUTPUT|| CLTYPE || {0 0} || ALPHA_CL || ALPHA_CU;
           ELSE IF CLTYPE>=1 THEN
@@ -1791,10 +1769,10 @@ OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
             END;
 
 
-***H.8) Compute requested power calculations;
+***H.9) Compute requested power calculations;
 
 
-***H.8.b) Select requested power calculations;
+***Select requested power calculations;
 ***             POWERCALC = 1 --> Univariate test or all mult tests coincide;
 ***             POWERCALC = 2 --> HL Trace;
 ***             POWERCALC = 3 --> PB Trace;
@@ -1803,9 +1781,8 @@ OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
 ***             POWERCALC = 6 --> UNIREP Huynh-Feldt;
 ***             POWERCALC = 7 --> UNIREP Geisser-Greenhouse;
 ***             POWERCALC = 8 --> UNIREP Box Conservative;
-                        
-                        
-          POWERCALCNUM = (LOC(OPTPOWERCALC1))`;
+                                             
+          POWERCALCNUM = (LOC(OPTPOWERCALC1))`;  
           DO POWERCNT = 1 TO NROW(POWERCALCNUM);
             POWERCALC = POWERCALCNUM[POWERCNT,1];            
             
@@ -1854,7 +1831,7 @@ OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
                               UCDFTEMP, UMETHODTEMP);
                 END;
             
-            IF POWERCALC = 7 THEN DO;
+            IF POWERCALC = 7 THEN DO; 
                 IF (N - R) <= 0 THEN EXEPS=.; 
                 ELSE EXEPS  = _GGEXEPS(B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, 
                                        SLAM2, SLAM3, SIGMASTAREVAL, 
@@ -1911,12 +1888,11 @@ OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
                ((S > 1) & (ANY(OPTPOWERCALC1[2:4,1]) = 1))              
                         THEN POWERWARN[21,1] = POWERWARN[21,1] + 1;
             END;  
-  END;          *** Alpha;   
+  					END;*** Alpha;   
           END;  *** Repn;
         END;    *** Beta;
       END;      *** Rho;
     END;        *** Sigma;
-  END;          *** Alpha;
 
 
 ***I) Print warnings from loop;
@@ -3069,8 +3045,6 @@ START _LASTUNI (POWER, LBL, POWERWARN,
         GLOBAL (IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, 
         	ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE, SIGTYPE);
 
-DEBUG=0;
-
 *** POWERCALC=   5=>UN 6=>HF 7=>GG 8=>Box ***;
 OPTPOWERCALC1LBL = {"COLLAPSE" "HLT" "PBT" "WLK"  "UN" "HF" "GG"  "BOX"}`;
 LBL = CONCAT( {"POWER_"} , OPTPOWERCALC1LBL[POWERCALC]);
@@ -3092,7 +3066,7 @@ Q4 = SIGSTAR[##];
 Q5 = TRACE(SIGSTAR*H);
 LAMBAR = Q1/B;
 
-IF SIGTYPE=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+IF SIGTYPE=0 & IP_PLAN=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
@@ -3130,7 +3104,6 @@ ELSE IF SIGTYPE=1 THEN DO; *** Enter loop to compute E1-E5 based on estimated SI
     END;
 
 ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
-
 	NU_IP = N_IP - RANK_IP;
 	E_1_2 = EXEPS;
 	E_4 = EPS;
@@ -3148,7 +3121,7 @@ ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP stud
     		AE_EPSN_UP = ET1 + {2}#Q1#Q2;
     		AE_EPSN_DN = B#( ET2 + {2}#Q5 );
     		AEX_EPSN = AE_EPSN_UP / AE_EPSN_DN;
-	     	E_3_5=AEX_EPSN; PRINT E_3_5 ET1 ET2; 
+	     	E_3_5=AEX_EPSN; 
 	     	END;
 	    ELSE DO;
 	    	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
@@ -3156,7 +3129,6 @@ ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP stud
 				EPSN = EPSN_NUM / (B # EPSN_DEN);
 				E_3_5 = EPSN;
 				END;
-	
 	END;
 
 IF (E_1_2 < (1 / B)) & (E_1_2 ^= .) THEN DO;
