@@ -713,6 +713,7 @@ UPU = (U` * U  + (U` * U)`) / 2;
 R =     _RANKSYMM(XPX, "X`X");                  ***Compute rank of ESSENCEX;
 RANKC = _RANKSYMM(CPC, "C`C");                  ***Compute rank of C;
 RANKU = _RANKSYMM(UPU, "U`U");                  ***Compute rank of U;
+FREE UPU;
 
 Q = NCOL(ESSENCEX);              *** Q is the number of columns of X;
 A = NROW(C);                     *** A is the number of rows of C;
@@ -1455,6 +1456,7 @@ IF (NROW(THETA0) ^= A) | (NCOL(THETA0) ^= B) THEN DO;
         CBETAU = C * BETA * U;
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , THETA0 , CBETAU;
         END;
+        FREE CBETAU;
         
 IF MIN(SIGSCAL) <= TOLERANCE THEN DO;
         CHECKER = 1;
@@ -1474,9 +1476,10 @@ XPXGINV = GINV(XPX);
 M = C * XPXGINV * C`;
 RANKM = _RANKSYMM(M, "C * GINV(X`X) * C`");     ***Compute rank of M;
 
-CBETAU = C * BETA * U;
+CBETAU = C * BETA * U; 
 SD = DIAG(SQRT(VECDIAG(SIGMA)));
 RHO = INV(SD) * SIGMA * INV(SD);        *** Correlation matrix to be printed;
+			FREE SD;
 
 
 ***G.3) Check and warning for less than full rank ESSENCEX;
@@ -1563,8 +1566,10 @@ IF OPTPOWERCALC2[4,1]=1 THEN DO;
 UTEMP = U;
 IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) | 
    (OPTPOWERCALC1[7,1] = 1) | (OPTPOWERCALC1[8,1] = 1) | (OPTPOWERCALC1[9,1]=1) THEN DO;
+   			UPU = (U` * U  + (U` * U)`) / 2;
         IF UPU[1 ,1] ^= 0 THEN UPU = UPU / UPU[1 ,1];
         UDIF = ABS( UPU - I(B));
+        			FREE UPU;
         IF ( MAX(UDIF) > SQRT(TOLERANCE) ) |  
            ( (B > 1) * ( MAX( U`*J(P,1,1) ) > SQRT(TOLERANCE) ) > 0 ) 
            THEN DO;
@@ -1619,6 +1624,8 @@ IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) |
                         END;
                 END;
         END;
+        
+        FREE UDIF;
 
 ***H) Loop to select ALPHA, BETA, SIGMA, N, and compute power;
 
@@ -1640,15 +1647,19 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
   	GO TO ERROREND;
   	END;
   STDEVSCALED = SQRT(VARSCALED);
+  			FREE VARSCALED;
   RHOSCALED1 = (DIAG(J(P,1,1) / (STDEVSCALED))) * SIGMASCALED1 
                         * (DIAG(J(P,1,1) / (STDEVSCALED)));
+        FREE SIGMASCALED1;
 
 ***H.2) Create new rhos;
 
 	DO RHOCNT = 1 TO NROW(RHOSCALTEMP);
   	RHOSCALAR = RHOSCALTEMP[RHOCNT,1];
     RHOJUNK = (RHOSCALED1 # RHOSCALAR);       *** Diagonal elements not =1;
+    			FREE RHOSCALED1;
     RHOOFFDIAG = RHOJUNK - DIAG(VECDIAG(RHOJUNK));  *** Off-diagonals;
+    			FREE RHOJUNK;
     RHOOFFDIAG = (RHOOFFDIAG + RHOOFFDIAG`) / 2;    ***To insure symmetry;
     IF MAX(ABS(RHOOFFDIAG)) > 1 THEN DO;
     	NOTE = COMPBL(CONCAT("ERROR 53: SIGSCAL = ", CHAR(SIGMASCALAR,1), 
@@ -1669,11 +1680,15 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
       GO TO ERROREND;
       END;
     RHOSCALED2 = RHOOFFDIAG + I(P);
+    			FREE RHOOFFDIAG;
       
     *** Create new sigma from rho;
       
     SIGMASCALED2 = DIAG(STDEVSCALED) * RHOSCALED2 * DIAG(STDEVSCALED);
+    			FREE RHOSCALED2;
+    			FREE STDEVSCALED;
     SIGMASTAR = UTEMP` * SIGMASCALED2 * UTEMP;
+    		  FREE SIGMASCALED2;
     SIGMASTAR = (SIGMASTAR + SIGMASTAR`) / 2;   ***To insure symmetry;
     CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);          
     SIGMASTARLBL = {"U`*SIGMA*U"};
@@ -1722,6 +1737,7 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
           
         E = SIGMASTAR # (N - R);  ***Not used if (N - R) <= 0 ;
         H = REPNTEMP[NCNT,1] # ESSH;
+        		FREE ESSH;
 
 
 ***H.6) Eigenvalues for H*INV(E);
@@ -2128,6 +2144,7 @@ IF MAX(ABS(NMATRIX - NMATRIX`)) >= SQRT(TOLERANCE) THEN DO;
         END;
         
 EVALS = EIGVAL(NMATRIX);
+			FREE NMATRIX;
 
 IF MIN(EVALS) < (-SQRT(TOLERANCE)) THEN DO;
         RANKMATRIX = .;
@@ -2809,6 +2826,7 @@ START _FIRSTUNI (D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
 
 ESIG = SIGMASTAR / ( TRACE(SIGMASTAR) );
 SEIGVAL = EIGVAL(ESIG);
+				FREE ESIG;
 SLAM1 = SUM(SEIGVAL)##2;
 SLAM2 = SSQ(SEIGVAL);
 SLAM3 = SUM(SEIGVAL);
@@ -2897,8 +2915,12 @@ ELSE DO;
         T4 = DEIGVAL * J(1,D,1);
         TM2 = T4 - T4`;
         TM2INV = 1 / (TM2 + I(D)) - I(D);
+        		FREE TM2;
         TM3 = TM1 # TM2INV;
+        		FREE TM1;
+        		FREE TM2INV;
         SUM2 = SUM(TM3);
+        		FREE TM3;
         END;
         
 *** Define HF Approx E(.) for Method 0;         
@@ -3051,9 +3073,14 @@ ELSE DO;
         TM1 = T2 * T3`;
         T4 = DEIGVAL * J(1,D,1);
         TM2 = T4 - T4`;
+        			FREE T4;
         TM2INV = 1 / (TM2 + I(D)) - I(D);
+        		FREE TM2;
         TM3 = TM1 # TM2INV;
+        		FREE TM1;
+        		FREE TM2INV;
         SUM2 = SUM(TM3);
+        		FREE TM3;
         END;
  
 *** Define GG Approx E(.) for Method 0;         
@@ -3159,6 +3186,7 @@ Q2 = TRACE(H);
 Q3 = Q1**2;
 Q4 = SIGSTAR[##];
 Q5 = TRACE(SIGSTAR*H);
+		FREE SIGSTAR;
 LAMBAR = Q1/B;
 
 IF SIGTYPE=0 & IP_PLAN=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
