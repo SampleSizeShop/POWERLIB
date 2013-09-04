@@ -1,5 +1,5 @@
 *************************************************************************;
-*                        August 08, 2005                                *;
+*                        January 16, 2009                               *;
 *************************************************************************;
 *  23456789A123456789B123456789C123456789D123456789E123456789F123456789G ;
 *************************************************************************;
@@ -135,37 +135,47 @@
 *             = 3  Rao (1951) two moment null approx + OS noncen mult   *;
 *             = 4  Rao (1951) two moment null approx + OS noncen mult   *;
 *                                                                       *;
+*    (13) IP_PLAN, (scalar)						                                  *;
+*	         =1 if desired power is calculated when planning an internal	*;
+*	            pilot study							                                  *;
+*	         =0 otherwise							                                    *;
+*									                                                      *;
+*    (14) N_IP, (scalar)						                                    *;
+*		       NEED TO FILL IN THIS DESCRIPTION - ASK KEITH		              *;
+*		      (required if IP_PLAN=1)					                              *;
+*									                                                      *;
+*    (15) RANK_IP, (scalar)						                                  *;
+*		      NEED TO FILL IN THIS DESCRIPTION - ASK KEITH		              *;
+*		      (required if IP_PLAN=1)					                              *;
 *                                                                       *;
 *    The following 5 parameters control creation of confidence intervals*;
-*    for power values of univariate and MULTIREP tests. Uses methods of *;
-*    Taylor and Muller (1995) for univariate models. **This theory has  *;
+*    for power values of univariate, UNIREP, and MULTIREP tests.        *; 
+*    Uses methods of Taylor and Muller (1995) for univariate models.    *;
 *    not yet been extended for the UNIREP tests.**                      *;
-*                                                                       *;
-*    (13) CLTYPE, (scalar)                                              *;
+*                                                                       *;   
+*    (16) CLTYPE, (scalar)                                              *;
 *                                                                       *;
 *       <1 or 0 by 0 matrix (never defined, or FREE-ed)                 *;
 *          if confidence intervals for power **not** desired            *;
 *       =1 if BETA known    , SIGMA estimated and CL desired            *;
 *       =2 if BETA estimated, SIGMA estimated and CL desired            *;
 *                                                                       *;
-*    (14) N_EST, (scalar) # of observations in analysis which yielded   *;
+*    (17) N_EST, (scalar) # of observations in analysis which yielded   *;
 *               BETA and SIGMA estimates  (required if CLTYPE>=1)       *;
 *                                                                       *;
-*    (15) RANK_EST, (scalar) rank of design matrix in analysis which    *;
+*    (18) RANK_EST, (scalar) rank of design matrix in analysis which    *;
 *           yielded BETA and SIGMA estimates (required if CLTYPE>=1)    *;
 *                                                                       *;
-*    (16) ALPHA_CL, (scalar) lower tail probability for power C.L.      *;
+*    (19) ALPHA_CL, (scalar) lower tail probability for power C.L.      *;
 *                  default=.025                                         *;
 *                                                                       *;
-*    (17) ALPHA_CU, (scalar) upper tail probability for power C.L.      *;
+*    (20) ALPHA_CU, (scalar) upper tail probability for power C.L.      *;
 *                  default=.025                                         *;
 *                                                                       *;
-*                                                                       *;
-*    (18) DSNAME, (1 row, 2-4 cols), name of output SAS data file.      *;
+*    (21) DSNAME, (1 row, 2-4 cols), name of output SAS data file.      *;
 *         Default WORK.PWRDT###.                                        *;
 *                                                                       *;
-*                                                                       *;
-*    (19) OPT_ON, OPT_OFF, (vectors), users can specify the options     *;
+*    (22) OPT_ON, OPT_OFF, (vectors), users can specify the options     *;
 *         they wish to turn on or off. The possible options are as      *;
 *         follows:                                                      *;
 *                                                                       *;
@@ -225,7 +235,8 @@
 *              RANK_EST   Rank of X in analysis creating                *;
 *                               BETA/SIGMA estimates            OFF     *;
 *              ALPHA_CL   CL Lower tail probability             ON      *;
-*              ALPHA_CU   CL Upper tail probability             ON      *;     
+*              ALPHA_CU   CL Upper tail probability             ON      *;  
+*	             NONCENCL	  CL for nocentrality			              OFF	    *;	   
 *                                                                       *;
 *           c) Print options - additional matrices                      *;
 *                                                                       *;
@@ -353,6 +364,13 @@ FINISH POWER;
 *       UMETHOD, (vector) choices of approximation of mean epsilon tilde*;
 *               and mean epsilon hat for the Huynh-Feldt and            *;
 *               Geisser-Greenhouse UNIREP tests.                        *;
+*	      MMETHOD, (vector) choice of distributional assumptions		      *;
+*		            for Hotelling-Lawley trace, Pillai-Bartlett trace, 	    *;
+*		            and Wilk's Lambda multivariate tests.			              *;
+*	      IP_PLAN, (scalar) flag to compute power in planning an		      *;
+*		            internal pilot design					                          *;
+*	      N_IP,	ASK KEITH ABOUT THIS					                            *;
+*	      RANK_IP, ASK KEITH ABOUT THIS					                          *;	
 *       CLTYPE, (scalar)                                                *;
 *               <1    or 0 by 0 matrix (never defined, or FREE-ed)      *;
 *                  if confidence intervals for power **not** desired    *;
@@ -383,8 +401,9 @@ START _POWER (HOLDPOWER, HOLDPOWERLBL, POWERWARN, POWERWARNLBL)
         GLOBAL (ESSENCEX, SIGMA, BETA, C, U, THETA0,
                 REPN, BETASCAL, SIGSCAL, RHOSCAL, ALPHA,
                 ROUND, TOLERANCE, TOLERANC, UCDF, UMETHOD, MMETHOD,
+                IP_PLAN, N_IP, RANK_IP,	
                 LIMCASE, CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU,
-                DSNAME, OPT_ON, OPT_OFF, NONCENCL);
+                DSNAME, OPT_ON, OPT_OFF);
                 
 ***A) Initial Setup;
 
@@ -552,6 +571,11 @@ IF NROW(MMETHOD) = 0 THEN DO;
         MMETHOD = {4, 2, 2};
         HITLIST = HITLIST // {MMETHOD};
         END;
+        
+IF NROW(IP_PLAN) = 0 THEN DO;
+	IP_PLAN = 0;
+        HITLIST = HITLIST // {IP_PLAN};
+        END;	
               
 IF NROW(CLTYPE) = 0 THEN DO;
         CLTYPE = -1 ;
@@ -637,6 +661,8 @@ IF (NCOL(MMETHODTEMP)={1}) & (NROW(MMETHODTEMP)={1})
 CHECKER = CHECKER + _SIZECHK(MMETHODTEMP,"MMETHOD") + 
         _TYPEMISSCHK(MMETHODTEMP,"MMETHOD","N");
 
+CHECKER = CHECKER + _TYPEMISSCHK(IP_PLAN ,"IP_PLAN" ,"N");
+
 CHECKER = CHECKER + _TYPEMISSCHK(CLTYPE ,"CLTYPE" ,"N");
 
 CHECKER = CHECKER + _TYPEMISSCHK(ALPHA_CL,"ALPHA_CL","N");
@@ -720,14 +746,21 @@ OPTPOWERMAT1ALBL
         = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ}`;
         
 IF CLTYPE < 1 THEN
-     OPTPOWERMAT1B = {   0      0      0        0        0    }`;
-ELSE OPTPOWERMAT1B = {   1      0      0        1        1    }`;
+     OPTPOWERMAT1B = {   0      0      0        0        0   }`;
+ELSE OPTPOWERMAT1B = {   1      0      0        1        1   }`;
 OPTPOWERMAT1BLBL   = {CLTYPE N_EST RANK_EST ALPHA_CL ALPHA_CU}`;
 
-OPTPOWERMAT1       = OPTPOWERMAT1A    // OPTPOWERMAT1B;
-OPTPOWERMAT1LBL    = OPTPOWERMAT1ALBL // OPTPOWERMAT1BLBL;
-OPTPOWERMAT2       = {   0     0      0       0   }`;
-OPTPOWERMAT2LBL    = {FMETHOD UCDF UMETHOD MMETHOD}`;
+IF IP_PLAN = 0 THEN
+     OPTPOWERMAT1C = {   0      0      0  }`;
+ELSE OPTPOWERMAT1C = {   1      0      0  }`;
+OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
+
+OPTPOWERMAT1       = OPTPOWERMAT1A    // OPTPOWERMAT1B 
+			// OPTPOWERMAT1C; 
+OPTPOWERMAT1LBL    = OPTPOWERMAT1ALBL // OPTPOWERMAT1BLBL 
+			// OPTPOWERMAT1CLBL;
+OPTPOWERMAT2       = {   0     0      0       0      0	   }`;
+OPTPOWERMAT2LBL    = {FMETHOD UCDF UMETHOD MMETHOD NONCENCL}`;
 
 ***OPTPRINT specifies whether to print matrices specified in OPTMATPRINT
 ***and whether to print the output power matrix;
@@ -821,15 +854,29 @@ IF ((NROW(OPT_ONTEMP) > 0) | (NROW(OPT_OFFTEMP) > 0)) THEN DO;
       CALL _SETOPT(OPTDATASET,    OPTDATASETLBL,    OPT_ONTEMP, OPT_OFFTEMP);
       END;
 
+***E.4) Reset IP_PLAN, N_IP, RANK_IP options off when IP_PLAN=0;
 
-***E.4) Reset CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU options off; 
+IF (IP_PLAN = 0) & ANY( OPTPOWERMAT1[13:15] = 1) THEN
+	OPTPOWERMAT1[13:15] = {0 0 0}`;
+
+
+***E.5) Reset CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU options off; 
 *** when CLTYPE < 1;
+*** Give error if NONCENCL=1 when CLTYPE <1;
 
 IF (CLTYPE < 1) & ANY( OPTPOWERMAT1[8:12] = 1) THEN
 	OPTPOWERMAT1[8:12] = {0 0 0 0 0}`;
 	
+IF (CLTYPE < 1) & OPTPOWERMAT2[5,1]=1 THEN DO;
+	NOTE = CONCAT("ERROR 83: NONCENCL is not a valid option in OPT_ON ",
+		"when CLTYPE < 1.");
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+        PRINT CLTYPE, OPT_ON;
+        GO TO ERROREND;
+        END;
+	
           
-***E.5) Extract requested variable names for output;
+***E.6) Extract requested variable names for output;
 
 KEEPOUT = LOC(OPTPOWERMAT1);
 
@@ -837,7 +884,7 @@ IF NROW(KEEPOUT) > 0 THEN KEEPOUTLBL = OPTPOWERMAT1LBL[KEEPOUT, ]`;
 ELSE IF NROW(KEEPOUTLBL) > 0 THEN FREE KEEPOUTLBL;
 
 
-***E.6) Insure that at least one test chosen;
+***E.7) Insure that at least one test chosen;
 
 IF ANY(OPTPOWERCALC1) ^= 1 THEN DO;
         NOTE = CONCAT("ERROR 9: OPT_OFF combined with defaults implies ", 
@@ -1077,8 +1124,67 @@ IF (NROW(SETDIF(MMETHODTEMP, {1 2 3 4})) > 0) THEN DO;
         END;
 
 
+*** F.9) Check IP_PLAN, N_IP, RANK_IP;
 
-***F.9) Check DSNAME;
+IF (NROW(IP_PLAN) + NCOL(IP_PLAN)) ^= 2 THEN DO;
+        NOTE = "ERROR 84: IP_PLAN must be a 1 by 1 matrix" ;
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , IP_PLAN;
+        GO TO ERROREND;
+        END;
+        
+IF IP_PLAN > 1 THEN DO;
+        NOTE = CONCAT("ERROR 85: Invalid IP_PLAN. IP_PLAN must be ",
+                      "0 or 1.");
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "], IP_PLAN;
+        GO TO ERROREND;
+        END;
+
+IF IP_PLAN = 1 THEN DO;        
+        IF (NROW(N_IP) = 0) | (NROW(RANK_IP) = 0) THEN DO;
+                IF (NROW(N_IP) = 0) THEN DO;
+                        NOTE = CONCAT("ERROR 86: N_IP not supplied. ", 
+                                      "This is required whenever ",
+                                      "IP_PLAN = 1.");
+                        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+                        END;
+                IF (NROW(RANK_IP) = 0) THEN DO;
+                        NOTE = CONCAT("ERROR 87: RANK_IP not ",
+                                      "supplied. This is required whenever ", 
+                                      "IP_PLAN = 1.");
+                        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+                        END;
+                GO TO ERROREND;
+                END;
+        
+        IF (_TYPEMISSCHK(N_IP,"N_IP","N") +
+                _TYPEMISSCHK(RANK_IP,"RANK_IP","N") ) > 0 THEN 
+                        GO TO ERROREND;
+        
+        IF (NROW(N_IP) + NCOL(N_IP)) ^= 2 THEN DO;
+                NOTE = CONCAT("ERROR 88: A 1x1 matrix N_IP is required if ",
+                              "IP_PLAN = 1.");
+                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , N_IP;
+                GO TO ERROREND;
+                END;
+        
+        IF (NROW(RANK_IP) + NCOL(RANK_IP)) ^= 2 THEN DO;
+                NOTE = CONCAT("ERROR 89: A 1x1 matrix RANK_IP is required ", 
+                              "if IP_PLAN = 1.");
+                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , RANK_IP;
+                GO TO ERROREND;
+                END;
+        
+        DF_IP = N_IP - RANK_IP;
+        IF (DF_IP <= 0) THEN DO;
+                NOTE = "ERROR 90: (N_IP - RANK_IP) must be > 0";
+                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] ,
+                      N_IP , RANK_IP;
+                GO TO ERROREND;
+                END;
+        END;
+
+
+***F.10) Check DSNAME;
 
 IF (NROW(DSNAME) > 1) | (NCOL(DSNAME) > 3) THEN DO;
         NOTE = "ERROR 25: DSNAME must have only 1 row and 2-3 columns.";
@@ -1086,7 +1192,7 @@ IF (NROW(DSNAME) > 1) | (NCOL(DSNAME) > 3) THEN DO;
         GO TO ERROREND;
         END;
 
-***F.10) Check CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU;
+***F.11) Check CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU;
 
 IF NROW(LIMCASE) > 0 THEN DO;
         NOTE = CONCAT("WARNING 8: In POWERLIM.IML, ",
@@ -1173,8 +1279,8 @@ IF CLTYPE >= 1 THEN DO;
                 NOTE = "ERROR 32: (N_EST - RANK_EST) must be > 0";
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] ,
                       N_EST , RANK_EST;
-                        GO TO ERROREND;
-                        END;
+                GO TO ERROREND;
+                END;
                         
         IF (NROW(ALPHA_CL) + NCOL(ALPHA_CL)) > 2 THEN DO;
                 NOTE = "ERROR 33: ALPHA_CL must be a 1x1 matrix" ;
@@ -1197,7 +1303,7 @@ IF CLTYPE >= 1 THEN DO;
                 GO TO ERROREND;
                 END;
         
-        IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) | 
+        /*IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) | 
              (OPTPOWERCALC1[7,1] = 1) | (OPTPOWERCALC1[8,1] = 1) THEN DO;
                 NOTE = CONCAT("WARNING 9: Current theory has not yet been ", 
                               "extended for CL of power of UNIREP tests. ", 
@@ -1205,7 +1311,7 @@ IF CLTYPE >= 1 THEN DO;
                               "powers have been omitted.");
                 IF OPTWARNPRINT THEN 
                     PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
-        END;
+        END;*/
                                 
         END;
         
@@ -1425,9 +1531,9 @@ IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) |
                                       "to an orthonormal matrix [U`U = cI] ",
                                       "and orthogonal to a Px1 column ",
                                       "of 1's [U`1 = 0]. The U matrix ",
-                                      "specified does not have the",
+                                      "specified does not have these ",
                                       "properties.  A new U matrix with ",
-                                      "the properties was created from ",
+                                      "these properties was created from ",
                                       "your input and ",
                                       "used in UNIREP calculations:");                            
                         IF OPTWARNPRINT THEN DO;
@@ -1555,6 +1661,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
             SLAM1 = .;
             SLAM2 = .; 
             SLAM3 = .;
+            CANCORRMAX=.;
             END;
           ELSE DO;
             FINV = INV(HALF(E))`;
@@ -1582,6 +1689,12 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
           IF CLTYPE >= 1 THEN 
                 OUTPUT = OUTPUT || CLTYPE || N_EST || RANK_EST || 
                        ALPHA_CL || ALPHA_CU;
+          IF IP_PLAN = 1 THEN DO;          	
+            IF CLTYPE >=1 THEN 
+             	 OUTPUT = OUTPUT || IP_PLAN || N_IP || RANK_IP;
+            ELSE OUTPUT = OUTPUT || CLTYPE || {0 0 0 0}
+            		   || IP_PLAN || N_IP || RANK_IP;
+            END;
           IF NROW(KEEPOUT) = 0 THEN DO;
             FREE OUTPUT;
             IF NROW(HOLDPOWERLBL) > 0 THEN FREE HOLDPOWERLBL;
@@ -1647,21 +1760,33 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
                 END;
             
             IF POWERCALC = 6 THEN DO;
-                IF (N - R) <= 0 THEN EXEPS=.; 
-                ELSE EXEPS  = _HFEXEPS(B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, 
-                                       SLAM2, SLAM3, SIGMASTAREVAL, 
-                                      SIGMASTAREVEC, UMETHODTEMP);                   
+                IF (N - R) <= 0 THEN EXEPS = .; 
+                ELSE EXEPS = _HFEXEPS(B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, 
+                                      SLAM2, SLAM3, SIGMASTAREVAL, 
+                                      SIGMASTAREVEC, UMETHODTEMP); 
+                IF IP_PLAN=1 THEN DO;
+                       EPS_IP = _HFEXEPS(B, N_IP, RANK_IP, D, MTP, EPS, DEIGVAL,
+                                         SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
+                                         SIGMASTAREVEC, UMETHODTEMP);
+                       EPS=EPS_IP;   
+                       END;              
                 CALL _LASTUNI(POWER, LBL, POWERWARN, EXEPS, H, E, A, B, R, N, 
                               EPS, POWERCALC, OPTPOWERMAT2, ALPHASCALAR, 
                               FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC, 
                               UCDFTEMP, UMETHODTEMP);
                 END;
             
-            IF POWERCALC = 7 THEN DO;
+            IF POWERCALC = 7 THEN DO; 
                 IF (N - R) <= 0 THEN EXEPS=.; 
                 ELSE EXEPS  = _GGEXEPS(B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, 
                                        SLAM2, SLAM3, SIGMASTAREVAL, 
-                                       SIGMASTAREVEC, UMETHODTEMP);                       
+                                       SIGMASTAREVEC, UMETHODTEMP); 
+                IF IP_PLAN=1 THEN DO;
+                       EPS_IP = _GGEXEPS(B, N_IP, RANK_IP, D, MTP, EPS, DEIGVAL,
+                                      SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
+                                      SIGMASTAREVEC, UMETHODTEMP);
+                       EPS=EPS_IP;
+                       END;                      
                 CALL _LASTUNI(POWER, LBL, POWERWARN, EXEPS, H, E, A, B, R, N, 
                               EPS, POWERCALC, OPTPOWERMAT2, ALPHASCALAR, 
                               FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC,  
@@ -1824,6 +1949,7 @@ DO CNT = 1 TO NROW(HITLIST);
         ELSE IF HITLIST[CNT] = {UCDF}      THEN FREE UCDF;
         ELSE IF HITLIST[CNT] = {UMETHOD}   THEN FREE UMETHOD;
         ELSE IF HITLIST[CNT] = {MMETHOD}   THEN FREE MMETHOD;
+        ELSE IF HITLIST[CNT] = {IP_PLAN}   THEN FREE IP_PLAN;
         ELSE IF HITLIST[CNT] = {CLTYPE}    THEN FREE CLTYPE;
         ELSE IF HITLIST[CNT] = {ALPHA_CL}  THEN FREE ALPHA_CL;
         ELSE IF HITLIST[CNT] = {ALPHA_CU}  THEN FREE ALPHA_CU;
@@ -2166,17 +2292,23 @@ IF CLTYPE >= 1 THEN DO;
         IF POWER = . THEN DO;
                 POWER={. . .};
                 POWERWARN[16,1] = POWERWARN[16,1] + 1;
+                IF OPTPOWERMAT2[5,1] = 1 THEN POWER={. . . . . .};
                 END;
         ELSE DO;
                 F_A = OMEGA / DF1;
-                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, POWERWARN, 
+                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, NONCEN_L, NONCEN_U, POWERWARN, 
                 	      F_A, ALPHASCALAR, DF1, N, DF2);
-             POWER = POWER_L || POWER || POWER_U;
-             END;
+                POWER = POWER_L || POWER || POWER_U;
+        	IF OPTPOWERMAT2[5,1] = 1 THEN DO;
+	     		POWER = NONCEN_L || OMEGA || NONCEN_U || POWER;
+	     		LBL = "NONCEN_HLT_L" || "NONCEN_HLT" || "NONCEN_HLT_U" || LBL;
+	     		END;
+	     	END;
         END;
 
 IF OPTPOWERMAT2[1,1] = 1 THEN DO;
         IF CLTYPE >= 1 THEN DO;
+        
                 POWER = FMETHOD_L || FMETHOD || FMETHOD_U || POWER;
                 LBL = "FMETHOD_HLT_L" || "FMETHOD_HLT" || 
                       "FMETHOD_HLT_U" || LBL;           
@@ -2278,15 +2410,20 @@ LBL = {"POWER_PBT"};
 IF CLTYPE >= 1 THEN DO;
         LBL = {"POWER_PBT_L" "POWER_PBT" "POWER_PBT_U"};
         IF POWER = . THEN DO;
-                POWER = {. . .};
+                POWER={. . .};
                 POWERWARN[16,1] = POWERWARN[16,1] + 1;
+                IF OPTPOWERMAT2[5,1] = 1 THEN POWER={. . . . . .};
                 END;
         ELSE DO;
                 F_A = OMEGA / DF1;
-                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, POWERWARN,
+                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, NONCEN_L, NONCEN_U, POWERWARN, 
                 	      F_A, ALPHASCALAR, DF1, N, DF2);
                 POWER = POWER_L || POWER || POWER_U;
-                END;
+        	IF OPTPOWERMAT2[5,1] = 1 THEN DO;
+	     		POWER = NONCEN_L || OMEGA || NONCEN_U || POWER;
+	     		LBL = "NONCEN_PBT_L" || "NONCEN_PBT" || "NONCEN_PBT_U" || LBL;
+	     		END;
+	     	END;
         END;
 
 IF OPTPOWERMAT2[1,1] = 1 THEN DO;
@@ -2403,15 +2540,20 @@ LBL = {"POWER_WLK"};
 IF CLTYPE >= 1 THEN DO;
         LBL = {"POWER_WLK_L" "POWER_WLK" "POWER_WLK_U"};
         IF POWER = . THEN DO;
-                POWER = {. . .};
+                POWER={. . .};
                 POWERWARN[16,1] = POWERWARN[16,1] + 1;
+                IF OPTPOWERMAT2[5,1] = 1 THEN POWER={. . . . . .};
                 END;
         ELSE DO;
                 F_A = OMEGA / DF1;
-                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, POWERWARN, 
-                              F_A, ALPHASCALAR, DF1, N, DF2);
+                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, NONCEN_L, NONCEN_U, POWERWARN, 
+                	      F_A, ALPHASCALAR, DF1, N, DF2);
                 POWER = POWER_L || POWER || POWER_U;
-                END;
+        	IF OPTPOWERMAT2[5,1] = 1 THEN DO;
+	     		POWER = NONCEN_L || OMEGA || NONCEN_U || POWER;
+	     		LBL = "NONCEN_WLK_L" || "NONCEN_WLK" || "NONCEN_WLK_U" || LBL;
+	     		END;
+	     	END;
         END;
 
 IF OPTPOWERMAT2[1,1] = 1 THEN DO;
@@ -2495,15 +2637,20 @@ IF (A =1) & (B>1) THEN F_METHODLBL = {"F_METHOD_MULT"};
 IF CLTYPE >= 1 THEN DO;
         LBL = CONCAT(LBL, "_L") || LBL || CONCAT(LBL, "_U") ;
         IF POWER = . THEN DO;
-                POWER = {. . .};
+                POWER={. . .};
                 POWERWARN[16,1] = POWERWARN[16,1] + 1;
+                IF OPTPOWERMAT2[5,1] = 1 THEN POWER={. . . . . .};
                 END;
         ELSE DO;
                 F_A = OMEGA / DF1;
-                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, POWERWARN, 
-                		F_A, ALPHASCALAR, DF1, N, DF2);
+                CALL _GLMMPCL(POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, NONCEN_L, NONCEN_U, POWERWARN, 
+                	      F_A, ALPHASCALAR, DF1, N, DF2);
                 POWER = POWER_L || POWER || POWER_U;
-                END; 
+        	IF OPTPOWERMAT2[5,1] = 1 THEN DO;
+	     		POWER = NONCEN_L || OMEGA || NONCEN_U || POWER;
+	     		LBL = "NONCEN_L" || "NONCEN" || "NONCEN_U" || LBL;
+	     		END;
+	     	END;
         END;
 
 IF OPTPOWERMAT2[1,1] = 1 THEN DO;
@@ -2630,12 +2777,12 @@ FINISH _FIRSTUNI;
 *************************************************************************;
 
 
-START _HFEXEPS ( B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3, 
+START _HFEXEPS (
+                B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3, 
                         SIGMASTAREVAL, SIGMASTAREVEC, UMETHODTEMP);
+
 *** Compute approximate expected value of Huynh-Feldt estimate;
-*DEBUG PRINT "HFEXEPS 1" B  N  R   D  MTP  EPS  DEIGVAL  
-                SLAM1  SLAM2  SLAM3   
-                        SIGMASTAREVAL  UMETHODTEMP;
+
 H1 = N # SLAM1 - 2 # SLAM2;
 H2 = (N - R) # SLAM2 - SLAM1;
 DERH1 = J(D, 1, 2 # N # SLAM3) -  4 # DEIGVAL;
@@ -2673,14 +2820,14 @@ DO CNT = 1 TO D;
 NU = N - R;
 EXPT1 = (2 # NU # SLAM2) + ((NU # NU) # SLAM1);
 EXPT2 = ((NU # (NU + 1)) # SLAM2) + (NU # SUM(SEVAL * SEVAL`));
-*DEBUG  PRINT NU EXPT1 EXPT2;
+
 *** End computation of EXP(T1) and EXP(T2);
 
 ***For use with Method 1; 
 
-NUM01 = (1 / B) # ((N # EXPT1) - (2 # EXPT2)); 
+NUM01 = (1 / B) # (((NU+1) # EXPT1) - (2 # EXPT2)); 
 DEN01 = (NU # EXPT2) - EXPT1;               
-*DEBUG  PRINT NUM01 DEN01;
+
 *** Define HF Approx E(.) for Method 1;
 
 E1EPSHF = NUM01 / DEN01;                        *** Method 1 ;
@@ -2823,7 +2970,8 @@ FINISH _GGEXEPS;
 *                                                                       *;
 * 2) User supplied  (or program default) - GLOBAL                       *;
 *                                                                       *;
-*       CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, ROUND              *;
+*       IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, ALPHA_CL, 	*;
+*	ALPHA_CU, ROUND     						*;
 *                                                                       *;   
 * OUTPUTS                                                               *;
 *                                                                       *;
@@ -2838,10 +2986,10 @@ START _LASTUNI (POWER, LBL, POWERWARN,
                 EXEPS, H, E, A, B, R, N, EPS, POWERCALC, OPTPOWERMAT2, 
                 ALPHASCALAR, FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC, 
                 UCDFTEMP, UMETHODTEMP)
-        GLOBAL (CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE, 
-        	NONCENCL);
-        	
-DEBUG=1;
+        GLOBAL (IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, 
+        	ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE);
+
+DEBUG=0;
 
 *** POWERCALC=   5=>UN 6=>HF 7=>GG 8=>Box ***;
 OPTPOWERCALC1LBL = {"COLLAPSE" "HLT" "PBT" "WLK"  "UN" "HF" "GG"  "BOX"}`;
@@ -2853,19 +3001,18 @@ NUE = N - R;
 IF (EXEPS = .) | (NUE <= 0) THEN GO TO POWDONE; 
 UNDF1 = B # A;
 UNDF2 = B # NUE ;
-NONCENCL=J(1,3,.);
 
 *** Create defaults - same for either SIGMA known or estimated ***;
 
 SIGSTAR=E/NUE;
-Q1 = TRACE(SIGSTAR);   SLAM3=1;
+Q1 = TRACE(SIGSTAR);
 Q2 = TRACE(H);
-Q3 = Q1**2;           SLAM1=1;
-Q4 = SIGSTAR[##];     SLAM2=Q4/(Q1#Q1); 
+Q3 = Q1**2;
+Q4 = SIGSTAR[##];
 Q5 = TRACE(SIGSTAR*H);
 LAMBAR = Q1/B;
 
-IF NCOL(N_EST) = 0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+IF NCOL(N_EST) = 0 & NCOL(N_IP)=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
@@ -2875,11 +3022,11 @@ IF NCOL(N_EST) = 0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA*
 	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
 	END;
 
-ELSE IF NCOL(N_EST)>0 THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
+ELSE IF NCOL(N_EST)>0 & NCOL(N_IP=0) THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
 
    	NU_EST = N_EST-RANK_EST;
    	IF NU_EST<=0 THEN DO;
-                NOTE = "ERROR: Too few estimation df in LASTUNI. df = N_EST - RANK_EST < 0. ";
+                NOTE = "ERROR 81: Too few estimation df in LASTUNI. df = N_EST - RANK_EST < 0. ";
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "], NU_EST N_EST RANK_EST;
                 STOP; 
                 END; 
@@ -2898,41 +3045,35 @@ ELSE IF NCOL(N_EST)>0 THEN DO; *** Enter loop to compute E1-E5 based on estimate
     	IF (POWERCALC={7}) THEN E_1_2 = EPS;     *** for GG crit val ***; 
        	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
                               ELSE E_3_5 = EPSNHAT;
-   	E_4=EPS;
- 	CL1DF = B # NU_EST # E_4 / E_3_5;
-        END;
+   	E_4=EPS; 
+   	CL1DF = B # NU_EST # E_4 / E_3_5;
+    END;
 
-**********************;
-*10/30/06 ;***IF TASK="IP" THEN DO;
-    N1=10;
-    R1=1;
-    NU1=9; * :) !; *SHOULD BE NU_EST=n1 from IP;	
+ELSE IF NCOL(N_IP) > 0 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
 
-    CALL _FIRSTUNI (D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
-               SIGSTAR, B)  ; *replace by adding to input list;
-    
-IF (POWERCALC={6}) THEN E_4=_HFEXEPS (B, N1, R1, D, MTP, EPS, DEIGVAL,
-                                        SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
-                                      SIGMASTAREVEC, UMETHODTEMP);
-E_4=MIN(E_4,{1});
-    *GG; IF (POWERCALC={7}) THEN E_4=_GGEXEPS (B, N1, R1, D, MTP, EPS, DEIGVAL, 
-                                        SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
-                                        SIGMASTAREVEC, UMETHODTEMP);
+	** NEED ADDITIONAL BRANCHING FOR IP + CL - ASK KEITH **;
 
-*    	 E4GUESS= ( (NU1+R1)#B#EPS-{2} ) /  ( B#(NU1-B#EPS) )  ;
-*        E4GUESST=MIN({1},E4GUESS);
-*    	IF (POWERCALC={6}) THEN E_4=E4GUESST;
-    MOMENTS=TREXPECT(SIGMASTAREVAL,NU1); * =MUPRIME[1:4]//E(Q2)//E(Q2##2)//E(Q1#Q2);
-    ET1=MOMENTS[2]/(NU1#NU1);
-    ET2=MOMENTS[5]/(NU1#NU1);
-    AE_EPSN_UP= ET1 + {2}#Q1#Q2;
-    AE_EPSN_DN=B#( ET2 + {2}#Q5 );
-    AEX_EPSN=AE_EPSN_UP/AE_EPSN_DN;
-    IF (POWERCALC={6})|(POWERCALC={7}) THEN E_3_5=AEX_EPSN; 
-
-IF DEBUG=1 THEN PRINT E_1_2 E_4 E_3_5;
-************END;
-
+	NU_IP = N_IP - RANK_IP;
+	E_1_2 = EXEPS;
+	E_4 = EPS;
+	
+    	MOMENTS = TREXPECT(SIGMASTAREVAL, NU_IP); * =MUPRIME[1:4]//E(Q2)//E(Q2##2)//E(Q1#Q2);
+    	ET1 = MOMENTS[2]/(NU_IP#NU_IP);
+    	ET2 = MOMENTS[5]/(NU_IP#NU_IP);
+    	AE_EPSN_UP = ET1 + {2}#Q1#Q2;
+    	AE_EPSN_DN = B#( ET2 + {2}#Q5 );
+    	AEX_EPSN = AE_EPSN_UP / AE_EPSN_DN;
+	    IF (POWERCALC={6})|(POWERCALC={7}) THEN E_3_5=AEX_EPSN; 
+	    ELSE DO;
+	    	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
+				EPSN_DEN = Q4 + Q5 # (2/A);
+				EPSN = EPSN_NUM / (B # EPSN_DEN);
+				E_3_5 = EPSN;
+				END;
+				    
+	IF DEBUG=1 THEN PRINT E_1_2 E_4 E_3_5 MOMENTS ET1 ET2 AE_EPSN_UP AE_EPSN_DN AEX_EPSN POWERCALC;
+	
+	END;
 
 IF (E_1_2 < (1 / B)) & (E_1_2 ^= .) THEN DO;
         E_1_2 = {1} / B;
@@ -2946,9 +3087,7 @@ IF E_1_2 > 1 THEN DO;
 *** Obtain critical value for power point estimate ***;
 
 OMEGA  = E_3_5 # Q2 / LAMBAR;
-NONCENCL[1,2] = OMEGA;
 RUN _FINV(FCRIT, 1 - ALPHASCALAR, UNDF1#E_1_2, UNDF2#E_1_2);
-*DEBUG  PRINT POWERCALC E_1_2 E_3_5 E_4 LAMBAR OMEGA;
 
 *** Compute power point estimate ***;
 
@@ -2996,7 +3135,7 @@ IF CLTYPE = 2 THEN DO;
 IF CLTYPE =1 THEN DO; 
 
 	IF (CDFPOWERCALC >2) THEN DO;
-   		NOTE = "ERROR: Any use of Exact CDF incompatible with power CL so stop.";
+   		NOTE = "ERROR 82: Any use of Exact CDF incompatible with power CL so stop.";
    		PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
    		STOP;
    		END; 
@@ -3006,12 +3145,10 @@ IF CLTYPE =1 THEN DO;
 		PROB = 1 - ALPHASCALAR;
 		FMETHOD_L = 5;
 		NONCEN_L = .;
-		NONCENCL[1,1] = .;
 		END;
 	ELSE DO;
 		CHI_L = CINV(ALPHA_CL, CL1DF);
 		NONCEN_L = OMEGA # (CHI_L / CL1DF ) ;
-		NONCENCL[1,1] = NONCEN_L;
 	        RUN _PROBF(PROB, FMETHOD_L, FCRIT, DF1, DF2, NONCEN_L);
         	RUN _FWARN(POWERWARN, FMETHOD_L, 2);
       		END;
@@ -3023,12 +3160,10 @@ IF CLTYPE =1 THEN DO;
 		PROB = 0;
 		FMETHOD_U = 5;
 		NONCEN_U = .;
-		NONCENCL[1,3] = .;
 		END;
 	ELSE DO;
 		CHI_U = CINV(1-ALPHA_CU, CL1DF);
 		NONCEN_U = OMEGA # (CHI_U / CL1DF ) ;
-		NONCENCL[1,3] = NONCEN_U;
 	        RUN _PROBF(PROB, FMETHOD_U, FCRIT, DF1, DF2, NONCEN_U);
         	RUN _FWARN(POWERWARN, FMETHOD_U, 2);
           	END;
@@ -3078,6 +3213,10 @@ ELSE IF POWERCALC = 8 THEN LBL = "EXEPS_BOX" || LBL ;
 IF FIRSTUNI = POWERCALC THEN DO;
         POWER = EPS || POWER;
         LBL = { "EPSILON"} || LBL;
+       	IF CLTYPE=1 & OPTPOWERMAT2[5,1] = 1 THEN DO; *If CL for NONCEN requested*;
+		POWER = NONCEN_L || OMEGA || NONCEN_U || POWER;
+		LBL = "NONCEN_UNI_L" || "NONCEN_UNI" || "NONCEN_UNI_U" || LBL;
+		END;
         END;
 FINISH _LASTUNI;
 
@@ -3135,12 +3274,14 @@ FINISH _LASTUNI;
 *               used in lower confidence limits power calculation       *;
 *       FMETHOD_U, Method used to calculate probability from F CDF      *;
 *               used in lower confidence limits power calculation       *;
+*				NONCEN_L, noncentrality confidence interval lower bound		      *;
+*				NONCEN_U, noncentrality confidence interval upper bound		      *;
 *       POWERWARN, vector of power calculation warning counts           *;
 *                                                                       *;
 *************************************************************************;
 
 
-START _GLMMPCL (POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, POWERWARN, 
+START _GLMMPCL (POWER_L, POWER_U, FMETHOD_L, FMETHOD_U, NONCEN_L, NONCEN_U, POWERWARN, 
                 F_A, ALPHATEST, DFH, N2, DFE2)
         GLOBAL (CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, TOLERANCE);
         
