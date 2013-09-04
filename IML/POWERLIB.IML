@@ -780,6 +780,29 @@ OPTWARNPRINTLBL    = {WARN}`;
 ***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
 OPTPOWERCALC1      = {    1     1   1   1  0  0  1  0  }`;
 OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF GG BOX}`;
+*NOTEJLJ - put chi muller statistic inbetween HF and GG;
+*NOTEJLJ - call this CM - is UEPSDPS on REPEATED statement in PROC GLM;
+*NOTEJLJ- so add another statistic, code is defined by powerlib;
+*NOTEJLJ - options LTFR, FRACREPN, ORTHU, UNIFORCE need to work the same way for CM as for other UNIREP statistics
+*NOTEJLJ - only the degrees of freedom change
+*NOTEJLJ - have to fiddle with EXEPS
+*NOTEJLJ - create a new module _CMEXEPS akin to EXEPS modules for GG and HF
+*NOTEJLJ - what we're calling HF in POWERLIB isn't tradtional HF, adds Gribbin fiddle
+*NOTEJLJ - Chi Muller Test is implemented in POWERLIB as HF??
+*NOTEJLJ - Chi Muller Test 2 in paper is what we're implemented. Test 1 is alread implemented.;
+*NOTEJLJ - Will be able to get rid of UBANDAID
+*NOTEJLJ - Block of code 1866-1872 go into CMEXEPS module. Then deal with branching;
+*NOTEJLJ - Change order of POWERCALC if it's straightforward to renumber;
+*NOTEJLJ - new PROC GLM in SAS doesn't do UNIFORCE
+*NOTEJLJ - example of when you might want to use this is when you have thousands of genes and say 40 subjects
+*NOTEJLJ - need to do some fussing about how we decide a covariance matrix is full rank
+*NOTEJLJ - SIGMASTAR is y*yprime, but for this case we want to look at yprime*y
+*NOTEJLJ - but for power analysis, sigma is legitmately 1000 by 1000, say not 40*40
+*NOTEJLJ - nervous about internal pilot part
+*NOTEJLJ - lines 3143-3145, guess that for CM, use EPSTILDE_RM*UBANDAID;
+*NOTEJLJ - GG and HF have random critical values. IP must account for this, lines 3155-3170.
+*NOTEJLJ - Keith thinks this section should be if powercalc in (6,7,8)
+
 OPTPOWERCALC2      = { 0       0        0        0   }`;
 OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU  UNIFORCE}`;
 
@@ -1402,9 +1425,14 @@ IF CLTYPE>=1 & SIGTYPE=0 THEN DO;
 
 CHECKER = 0;
 
-IF MIN(VECDIAG(SIGMA)) <= TOLERANCE THEN DO;
+/*IF MIN(VECDIAG(SIGMA)) <= TOLERANCE THEN DO;
         CHECKER = 1;
         NOTE = "ERROR 36: At least one variance <= TOLERANCE. Check SIGMA.";
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , TOLERANCE , SIGMA ;
+        END;   */
+IF MIN(VECDIAG(SIGMA)) < (-TOLERANCE) THEN DO;
+        CHECKER = 1;
+        NOTE = "ERROR 36: At least one variance <= -TOLERANCE. Check SIGMA.";
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , TOLERANCE , SIGMA ;
         END;
 
@@ -1689,9 +1717,8 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
     IF RANKSIGMASTAR ^= B THEN DO;
       NOTE = COMPBL(CONCAT("ERROR 54: SIGMASTAR = U`*SIGMA*U must be ", 
                            "full rank to ensure testability of CBETAU = ",
-                           "THETA0. SIGMASTAR is", CHAR(B,1), 
-                           "x", CHAR(B,1),
-                           "but has rank ", CHAR(RANKSIGMASTAR), "."));
+                           "THETA0. SIGMASTAR is ", CHAR(B), " x" , CHAR(B),
+                           " but has rank ", CHAR(RANKSIGMASTAR), "."));
       PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGMASTAR;
       GO TO ERROREND;
       END;
@@ -1854,6 +1881,10 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
                        EPS=EPS_IP;   
                        END;
 **********************bandaid code to implment Chi et al. 2011 Stat Med;
+*****creating a new _HFEXEPS >> _HFEXEPSChi will simplify adding,;
+*****and will support IP:) ;
+****propose insert Chi in 6.5 location so 9 total tests (renumberg GG and Box to 8,9;
+
                 IF (UPCASE(UBANDAID)="ON")&((N-R)>0) THEN DO;
                    IF (N-R)=1 THEN UEFACTOR=1;
                               ELSE DO; 
@@ -2107,19 +2138,17 @@ IF ALL(MATRIX = .) THEN DO;
 
 MAXABSVAL = MAX(ABS(MATRIX));
 
-IF MAXABSVAL <= TOLERANCE THEN DO;
+IF MAXABSVAL = {0} THEN DO;
         RANKMATRIX = .;
         NOTE = COMPBL(CONCAT("ERROR 58: Matrix ", MATRIXLBL, 
-                             " has MAX(ABS(all elements)) <= TOLERANCE."));
+                             " has MAX(ABS(all elements)) = exact zero."));
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] ,
               MATRIX [LABEL=MATRIXLBL];
         RETURN(RANKMATRIX);
         END;
 NMATRIX = MATRIX / MAXABSVAL;
-
    ***sqrt in next line due to numerical inaccuracy in sscp
       calculation with some data via sweep;
-
 IF MAX(ABS(NMATRIX - NMATRIX`)) >= SQRT(TOLERANCE) THEN DO;
         RANKMATRIX = .;
         NOTE = COMPBL(CONCAT("ERROR 59: Matrix ", MATRIXLBL, 
@@ -2149,7 +2178,7 @@ IF MIN(EVALS) < (-SQRT(TOLERANCE)) THEN DO;
         RETURN(RANKMATRIX);
         END;
         
-RANKMATRIX = SUM(EVALS > SQRT(TOLERANCE));
+RANKMATRIX = SUM(EVALS >= TOLERANCE );
 
 RETURN(RANKMATRIX);
 
