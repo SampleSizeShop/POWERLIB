@@ -1,5 +1,5 @@
 *************************************************************************;
-*                        April 24, 2009                                 *;
+*                   from April 24, 2009 now Oct 6 2011                  *;
 *************************************************************************;
 *  23456789A123456789B123456789C123456789D123456789E123456789F123456789G ;
 *************************************************************************;
@@ -113,6 +113,9 @@
 *       used for both tests, with choice 1 or 2 as described above.     *;
 *                                                                       *;      
 *       If UMETHOD is not specified, the default is {2, 2}              *;
+*                                                                       *;
+********bandaid code to implment Chi et al. 2011 Stat Med               *;
+*        IF (UPCASE(UBANDAID)="ON") THEN implement   HF factor          *;
 *                                                                       *;
 *                                                                       *;
 *    O'Brien & Shieh (1992, OS) recommended multipling noncentrality by *;
@@ -424,7 +427,8 @@ START _POWER (HOLDPOWER, HOLDPOWERLBL, POWERWARN, POWERWARNLBL)
                 ROUND, TOLERANCE, TOLERANC, UCDF, UMETHOD, MMETHOD,
                 IP_PLAN, N_IP, RANK_IP,	
                 LIMCASE, CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, SIGTYPE,
-                DSNAME, OPT_ON, OPT_OFF);
+                DSNAME, OPT_ON, OPT_OFF,
+                UBANDAID);   *******implement Chi et al 2011 UNIREP factor;
                 
 ***A) Initial Setup;
 
@@ -624,6 +628,12 @@ IF NROW(DSNAME) = 0 THEN DO;
         HITLIST = HITLIST // {DSNAME};
         END;        
 
+*******implement Chi et al 2011 UNIREP factor;
+IF NROW(UBANDAID) = 0 THEN DO;
+        UBANDAID = {"OFF"};
+        HITLIST = HITLIST // {UBANDAID};
+        END;
+
 
 ***C) Initial checks on all input matrices
 
@@ -699,8 +709,13 @@ CHECKER = CHECKER + _TYPEMISSCHK(ALPHA_CU,"ALPHA_CU","N");
 CHECKER = CHECKER + _TYPEMISSCHK(SIGTYPE ,"SIGTYPE" ,"N");
 
 CHECKER = CHECKER + _TYPEMISSCHK(DSNAME, "DSNAME", "C");
+
+*******implement Chi et al 2011 UNIREP factor;
+CHECKER = CHECKER + _TYPEMISSCHK(UBANDAID, "UBANDAID", "C") + 
+                     _SIZECHK(UBANDAID,"UBANDAID") ;
                 
 IF CHECKER > 0 THEN GO TO ERROREND;
+
 
 ***D) Define initial parameters for power calculation;
 
@@ -1837,7 +1852,18 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
                                          SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
                                          SIGMASTAREVEC, UMETHODTEMP);
                        EPS=EPS_IP;   
-                       END;              
+                       END;
+**********************bandaid code to implment Chi et al. 2011 Stat Med;
+                IF (UPCASE(UBANDAID)="ON")&((N-R)>0) THEN DO;
+                   IF (N-R)=1 THEN UEFACTOR=1;
+                              ELSE DO; 
+                                   NU_E= N -R ;
+                                   NU_A=(NU_E-{1})+NU_E#(NU_E-{1})/{2};
+                                   UEFACTOR=(NU_A-2)#(NU_A-4)/(NU_A#NU_A);
+                                   END;
+                   EXEPS=UEFACTOR#EXEPS;
+                   END;****bandaid code ;
+                                     
                 CALL _LASTUNI(POWER, LBL, POWERWARN, EXEPS, H, E, A, B, R, N, 
                               EPS, POWERCALC, OPTPOWERMAT2, ALPHASCALAR, 
                               FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC, 
