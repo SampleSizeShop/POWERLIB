@@ -1,5 +1,5 @@
 *************************************************************************;
-*                        June 25, 2012                                  *;
+*                        September 2, 2013                              *;
 *************************************************************************;
 *  23456789A123456789B123456789C123456789D123456789E123456789F123456789G ;
 *************************************************************************;
@@ -151,8 +151,6 @@
 *                                                                       *;
 *    The following 5 parameters control creation of confidence intervals*;
 *    for power values of univariate, UNIREP, and MULTIREP tests.        *; 
-*    Uses methods of Taylor and Muller (1995) for univariate models.    *;
-*    not yet been extended for the UNIREP tests.                        *;
 *                                                                       *;   
 *    (16) CLTYPE, (scalar) determines whether confidence intervals      *;
 *								are produced																						*;
@@ -162,10 +160,12 @@
 *       =2 if BETA estimated, SIGMA estimated and CL desired            *;
 *                                                                       *;
 *    (17) N_EST, (scalar) # of observations in analysis which yielded   *;
-*               BETA and SIGMA estimates  (required if CLTYPE>=1)       *;
+*               BETA and SIGMA estimates  (required if SIGTYPE=1        *;
+*               OR CLTYPE>=1)                                           *;
 *                                                                       *;
 *    (18) RANK_EST, (scalar) rank of design matrix in analysis which    *;
-*           yielded BETA and SIGMA estimates (required if CLTYPE>=1)    *;
+*           yielded BETA and SIGMA estimates (required if SIGTYPE=1     *;
+*               OR CLTYPE>=1)                                           *;
 *                                                                       *;
 *    (19) ALPHA_CL, (scalar) lower tail probability for power C.L.      *;
 *                  default=.025                                         *;
@@ -402,7 +402,8 @@ FINISH POWER;
 *               =1 if BETA known    , SIGMA estimated and CL desired    *;
 *               =2 if BETA estimated, SIGMA estimated and CL desired    *;
 *       N_EST, (scalar) # of observations in analysis which yielded     *;
-*               BETA and SIGMA estimates (required if CLTYPE>=1)        *;
+*               BETA and SIGMA estimates (required if CLTYPE>=1 or      *;
+*               SIGTYPE=1)                                              *;
 *       RANK_EST, (scalar) design matrix rank in analysis which         *;
 *            yielded BETA and SIGMA estimates (required if CLTYPE>=1)   *;
 *       ALPHA_CL, (scalar) lower tail probability for power C.L.        *;      
@@ -453,7 +454,7 @@ RESET NOLOG;
 *** All warnings are stored in vector POWERWARN;
 *** Labels for the warnings are stored in vector POWERWARNLBL;
 
-POWERWARN = J(22,1,0);
+POWERWARN = J(23,1,0);
 
 POWERWARNLBL = 
 CONCAT( "1: A Tiku approximation (see manual) was used in calculating ", 
@@ -496,7 +497,10 @@ CONCAT("21: (N - R) <= 5, so power approximations may be inaccurate, ",
             "especially Huynh-Feldt. See the manual.")                     //
 CONCAT("22: Power values were rounded to 1 using the value contained ", 
        "in ROUND and should not be be reported as Power = 1. For ", 
-       "example, if ROUND = 3 then report Power > 0.999 .")                
+       "example, if ROUND = 3 then report Power > 0.999 .")  //
+CONCAT("23: Power is missing, because Geisser-Greenhouse ",
+				"and Box tests are poorly behaved (super low power and test size) " ,
+				"when B > N-R, i.e., HDLSS.")
 ;
 
 ***A.4) Delete previous versions of HOLDPOWER and HOLDPOWERLBL;
@@ -1271,27 +1275,28 @@ IF (NROW(CLTYPE) + NCOL(CLTYPE)) ^= 2 THEN DO;
         GO TO ERROREND;
         END;
         
-
-IF CLTYPE >= 1 THEN DO;
-        
+IF (CLTYPE >= 1) | (SIGTYPE=1) THEN DO;
+      
+      /*  
         IF (1 - ANY(CLTYPE = {1 2})) THEN DO;
                 NOTE = CONCAT("ERROR 27: Invalid CLTYPE. If ",
-                              "CLTYPE >= 1, it must be 1 or 2.");
+                              "CLTYPE >= 1 or SIGTYPE=1, CLTYPE must be 1 or 2.");
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
                 GO TO ERROREND;
                 END;    
+        */
         
         IF (NROW(N_EST) = 0) | (NROW(RANK_EST) = 0) THEN DO;
                 IF (NROW(N_EST) = 0) THEN DO;
                         NOTE = CONCAT("ERROR 28: N_EST not supplied. ", 
                                       "This is required whenever ",
-                                      "CLTYPE >= 1.");
+                                      "CLTYPE >= 1 or SIGTYPE=1.");
                         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
                         END;
                 IF (NROW(RANK_EST) = 0) THEN DO;
                         NOTE = CONCAT("ERROR 29: RANK_EST not ",
                                       "supplied. This is required whenever ", 
-                                      "CLTYPE >= 1.");
+                                      "CLTYPE >= 1 or SIGTYPE=1.");
                         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
                         END;
                 GO TO ERROREND;
@@ -1303,21 +1308,21 @@ IF CLTYPE >= 1 THEN DO;
         
         IF (NROW(N_EST) + NCOL(N_EST)) ^= 2 THEN DO;
                 NOTE = CONCAT("ERROR 30: A 1x1 matrix N_EST is required if ",
-                              "CLTYPE >= 1.");
+                              "CLTYPE >= 1 or SIGTYPE=1.");
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , N_EST;
                 GO TO ERROREND;
                 END;
         
         IF (NROW(RANK_EST) + NCOL(RANK_EST)) ^= 2 THEN DO;
                 NOTE = CONCAT("ERROR 31: A 1x1 matrix RANK_EST is required ", 
-                              "if CLTYPE >= 1.");
+                              "if CLTYPE >= 1 or SIGTYPE=1.");
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , RANK_EST;
                 GO TO ERROREND;
                 END;
         
         DFEE = N_EST - RANK_EST;
-        IF (DFEE <= 0) THEN DO;
-                NOTE = "ERROR 32: (N_EST - RANK_EST) must be > 0";
+        IF (DFEE <= 1) THEN DO;
+                NOTE = "ERROR 32: (N_EST - RANK_EST) must be > 1.";
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] ,
                       N_EST , RANK_EST;
                 GO TO ERROREND;
@@ -1363,14 +1368,14 @@ IF (SIGTYPE >1) THEN DO;
 
 ***F.12) Check intersection of values of CLTYPE, SIGTYPE, and IP_PLAN;
 
-IF SIGTYPE=1 & IP_PLAN=1 THEN DO;    
+IF (SIGTYPE=1) & (IP_PLAN=1) THEN DO;    
         NOTE = CONCAT("ERROR 91: SIGMA must be known when planning an ", 
         							 "internal pilot. Set SIGTYPE=0 or IP_PLAN=0.") ;
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGTYPE, IP_PLAN;
         GO TO ERROREND;
         END;    
 
-IF CLTYPE>=1 & IP_PLAN=1 THEN DO;
+IF (CLTYPE>=1) & (IP_PLAN=1) THEN DO;
         NOTE = CONCAT( "ERROR 92: Confidence intervals are not valid ", 
         							 "when planning an internal pilot. Set CLTYPE<1 ",
         							 "or IP_PLAN=0.");
@@ -1378,7 +1383,7 @@ IF CLTYPE>=1 & IP_PLAN=1 THEN DO;
         GO TO ERROREND;
         END;
 
-IF CLTYPE>=1 & SIGTYPE=0 THEN DO;
+IF (CLTYPE>=1) & (SIGTYPE=0) THEN DO;
         NOTE = CONCAT( "ERROR 93: SIGMA must be estimated when confidence ",
         							 "intervals are produced. Set CLTYPE<1 or SIGTYPE=1.");
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , CLTYPE, SIGTYPE;
@@ -1716,14 +1721,6 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
     CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);          
     SIGMASTARLBL = {"U`*SIGMA*U"};
     RANKSIGMASTAR = _RANKSYMM(SIGMASTAR, SIGMASTARLBL);
-    IF RANKSIGMASTAR ^= B THEN DO;
-      NOTE = COMPBL(CONCAT("ERROR 54: SIGMASTAR = U`*SIGMA*U must be ", 
-                           "full rank to ensure testability of CBETAU = ",
-                           "THETA0. SIGMASTAR is ", CHAR(B), " x" , CHAR(B),
-                           " but has rank ", CHAR(RANKSIGMASTAR), "."));
-      PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGMASTAR;
-      GO TO ERROREND;
-      END;
 
 ***H.3) Start UNIREP power calcs, if any;
           
@@ -1762,10 +1759,24 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
         H = REPNTEMP[NCNT,1] # ESSH;
         		FREE ESSH;
 
+	 **ADD SECOND MESSAGE ABOUT HDLSS AND MULTIREP+GG**;
+
+		*MOVED FROM H2 LOOP;
+    IF ((B > N-R) & (MAX(OPTPOWERCALC1[{1}:{5}]//OPTPOWERCALC1[{8}:{9}])>0))) |
+        ((B <= N-R) & (RANKSIGMASTAR ^= B) & (MAX(OPTPOWERCALC1[{1}:{5}]//OPTPOWERCALC1[{8}:{9}])>0))
+        		& (B>1)) THEN DO; 
+    				*LTFR SIGMA, NOT HDLSS, REQUEST TEST THAT IS NOT CM OR HF;
+      NOTE = COMPBL(CONCAT("ERROR 54: SIGMASTAR = U`*SIGMA*U must be ", 
+                           "full rank to ensure testability of CBETAU = ",
+                           "THETA0 for WLK, PBT, and HLT. SIGMASTAR is ", CHAR(B), " x" , CHAR(B),
+                           " but has rank ", CHAR(RANKSIGMASTAR), "."));
+      PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGMASTAR;
+      GO TO ERROREND;
+      END;
+
+
 
 ***H.6) Eigenvalues for H*INV(E);
-     
-     		PRINT N R;
      
 				IF MAX( OPTPOWERCALC1[ {1}:{4} ] ) THEN DO;  
  
@@ -3199,6 +3210,12 @@ CDFPOWERCALC = UCDFTEMP[ POWERCALC - {4} ];
 POWER = .;
 FMETHOD=0;
 NUE = N - R;
+
+IF (B > NUE) & ((POWERCALC=8) | (POWERCALC=9)) THEN DO;
+        POWERWARN[23,1] = POWERWARN[23,1];
+        GOTO POWDONE;
+        END;
+
 IF (EXEPS = .) | (NUE <= 0) THEN GO TO POWDONE; 
 UNDF1 = B # A;
 UNDF2 = B # NUE ;
@@ -3211,51 +3228,118 @@ Q2 = TRACE(H);
 Q3 = Q1**2;
 Q4 = SIGSTAR[##];
 Q5 = TRACE(SIGSTAR*H);
-		FREE SIGSTAR;
 LAMBAR = Q1/B;
 
-IF SIGTYPE=0 & IP_PLAN=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+*Case 1;
+IF (SIGTYPE=0) & (IP_PLAN=0) THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+ PRINT "ENTERED CASE 1 LOOP";
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
 	E_1_2 = EXEPS; 
 	E_4  =  EPS;
 	E_3_5 = EPSN;   			 *** MEST, (CDFPOWERCALC = 2,3,4 ***);
+	PRINT E_1_2 E_4 E_3_5;
 	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
 	END;
 
-ELSE IF SIGTYPE=1 THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
-
+*Case 2;
+IF (SIGTYPE=1) & (IP_PLAN=0) THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
+PRINT "ENTERED CASE 2 LOOP";
+      
    	NU_EST = N_EST-RANK_EST;
-   	IF NU_EST<=0 THEN DO;
-                NOTE = "ERROR 81: Too few estimation df in LASTUNI. df = N_EST - RANK_EST < 0. ";
+   	IF NU_EST<=1 THEN DO;
+                NOTE = "ERROR 81: Too few estimation df in LASTUNI. df = N_EST - RANK_EST <= 1. ";
                 PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "], NU_EST N_EST RANK_EST;
                 STOP; 
                 END; 
    	
+   	E_1_2 = EXEPS; ***For POWERCALC=5=Uncorrected and POWERCALC=9=Box critical values***;
+
+		**For POWERCALC =6=HF, =7=CM, =8=GG critical values **;
    	EPSTILDE_R = ( (NU_EST+{1}) # Q3 - {2} # Q4 ) /
                      ( B # (NU_EST # Q4 - Q3) ) ; *** Generalized approx unbiased ***;
   	EPSTILDE_RM = MIN(EPSTILDE_R,{1});
    	MULT = NU_EST # NU_EST + NU_EST - {2};
    	
-   	EPSNHAT_NUM =  NU_EST # (Q3 # NU_EST # (NU_EST+{1}) + Q1 # Q2 # ({2}#MULT/A) - Q4 # {2} # NU_EST) ;
-   	EPSNHAT_DEN = (Q4 # NU_EST # NU_EST + Q5 #(2#MULT/A) - Q3# NU_EST)# NU_EST ;
+   	EPSNHAT_NUM =  Q3 # NU_EST # (NU_EST+{1}) + Q1 # Q2 # ({2}#MULT/A) - Q4 # {2} # NU_EST ;
+   	EPSNHAT_DEN = Q4 # NU_EST # NU_EST + Q5 #(2#MULT/A) - Q3# NU_EST;
    	EPSNHAT = EPSNHAT_NUM / (B # EPSNHAT_DEN);
    	
-   	E_1_2 = EXEPS;
-    	IF (POWERCALC={6}) THEN E_1_2 = EPSTILDE_RM;  *** for HF crit val ***;
-    	IF (POWERCALC={7}) THEN E_1_2 = EPSTILDE_RM;  *** for HFCM crit val ***;
-    	IF (POWERCALC={8}) THEN E_1_2 = EPS;     *** for GG crit val ***; 
-       	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
-                              ELSE E_3_5 = EPSNHAT;
+   	**BEGIN SECTION FOR NEW CM CODE **;
+   	
+   	N0=N;
+   	TR1=Q1;
+    TR2=Q4;
+    TR3=Q2;
+    TR4=Q5/A;
+   	
+   	TR10=Q1;
+    TR20=Q4;
+    NUE0=NUE;
+   	
+   	NUA0=(NUE0-1) + NUE0#(NUE0-1)/2;
+    TAU10=NUE0#( (NUE0+1)#TR10#TR10-2#TR20 )/(NUE0#NUE0+NUE0-2);
+    TAU20=NUE0# ( NUE0#TR20-TR10#TR10 )/(NUE0#NUE0+NUE0-2);
+
+    DELTA0=H#(N/N0);
+    TR30=TRACE(DELTA0);
+    TR40=TRACE(SIGSTAR*DELTA0)/A;
+    TR41=TRACE(SIGSTAR*H)/A;
+    
+    EPSDA=TAU10#(NUA0-2)#(NUA0-4)/(B#NUA0#NUA0#TAU20);
+    EPSDA=MAX(MIN(EPSDA,{1}),1/B);
+    EPSNA={0,0,0,0};
+    OMEGAUA={0,0,0,0};
+    EPSNA[1]=( 1 + 2#(TR3/A)/TR10 )/ ( 1/EPSDA + 2#B#TR41/(TR10#TR10) );
+    OMEGAUA[1]= TR3#EPSNA[1]#(B/TR10);
+    
+    EPSNA[2]=( 1 + 2#(TR3/A)/TR10 )/ ( 1/EPSDA + 2#B#TR41/TAU10 );
+    OMEGAUA[2]= TR3#EPSNA[2]#(B/TR10);
+    
+    EPSNA[3]=( 1 + 2#(TR30/A)/TR10 )/ ( 1/EPSDA + 2#B#TR40/(TR10#TR10) );
+    OMEGAUA[3]= TR30#EPSNA[3]#(B/TR10);
+    
+    EPSNA[4]=( 1 + 2#(TR30/A)/TR10 )/ ( 1/EPSDA + 2#B#TR40/TAU10 );
+    OMEGAUA[4]= TR30#EPSNA[4]#(B/TR10);
+    
+    DF1N=A#B#EPSDA;
+    DF2N=B#NUE#EPSDA;
+   	DF1=A#B#EPSNA;
+  	DF2=B#NUE#EPSDA;
+    
+    PRINT EPSNA;
+    PRINT OMEGAUA;
+   	PRINT DF1N DF2N DF1 DF2;
+   	
+   	**END SECTION FOR NEW CM CODE **;
+
+    IF (POWERCALC={6}) THEN DO;
+    	 IF B<=(N-R) THEN E_1_2 = EPSTILDE_RM;  *** for HF crit val ***;
+    	 END;
+    	 
+    IF (POWERCALC={7}) THEN DO; *** for HFCM crit val ***;
+    		 E_1_2=EPSDA;
+    		 END;
+    		 
+    		 
+    IF (POWERCALC={8}) THEN E_1_2 = EPS;     *** for GG crit val ***; 
+                                             *** Not allowed for HDLSS earlier in program ***;
+
+    IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
+                          ELSE E_3_5 = EPSNHAT; 
+    IF POWERCALC={7} THEN E_3_5=EPSNA[2];
    	E_4=EPS; 
-   	CL1DF = B # NU_EST # E_4 / E_3_5;
+   	IF POWERCALC={7} THEN E_4=EPSDA;
+   	CL1DF = B # NU_EST # E_4 / E_3_5; 
+   	PRINT E_1_2 E_4 E_3_5;
     END;
 
-ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
+*Case 3;
+IF (IP_PLAN=1) & (SIGTYPE=0) THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
 													*** Case where SIGTYPE=1 and IP_PLAN has not been implemented
 														  since computing power for estimated sigma does not make
-														  sense for planning an internal pilot.
+														  sense for planning an internal pilot.											
 	NU_IP = N_IP - RANK_IP;
 	E_1_2 = EXEPS;
 	E_4 = EPS;
@@ -3283,6 +3367,8 @@ ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP stud
 				END;
 	END;
 
+***Case 4: Code does not allow IP_PLAN=1 & SIGTYPE=1***;
+
 IF (E_1_2 < (1 / B)) & (E_1_2 ^= .) THEN DO;
         E_1_2 = {1} / B;
         POWERWARN[17,1] = POWERWARN[17,1] + 1;
@@ -3295,6 +3381,10 @@ IF E_1_2 > 1 THEN DO;
 *** Obtain critical value for power point estimate ***;
 
 OMEGA  = E_3_5 # Q2 / LAMBAR;
+IF (POWERCALC={7}) & (SIGTYPE=1) & (IP_PLAN=0) THEN OMEGA=OMEGAUA[2];
+FCRITDF1=UNDF1#E_1_2;
+FCRITDF2=UNDF2#E_1_2;
+PRINT FCRITDF1 FCRITDF2;
 RUN _FINV(FCRIT, 1 - ALPHASCALAR, UNDF1#E_1_2, UNDF2#E_1_2);
 
 *** Compute power point estimate ***;
@@ -3325,11 +3415,14 @@ IF (CDFPOWERCALC = 1) | (CDFPOWERCALC = 2) |
 ( (CDFPOWERCALC = 4) & (POWER = .)) THEN DO;
        DF1 = UNDF1#E_3_5;
        DF2 = UNDF2#E_4;
+        PRINT FMETHOD FCRIT DF1 DF2 OMEGA UNDF1 E_3_5 UNDF2 E_4;
        RUN _PROBF(PROB, FMETHOD, FCRIT, DF1, DF2, OMEGA);
        RUN _FWARN(POWERWARN, FMETHOD, 1);
        IF (FMETHOD = 4) & (PROB = 1) THEN POWER = ALPHASCALAR;
                                       ELSE POWER = 1 - PROB;                                   
        END;
+
+PRINT POWER;
 
 *** Compute CL for power, if requested by user ***;
 
@@ -3339,6 +3432,8 @@ IF CLTYPE = 2 THEN DO;
   	PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
   	STOP;
   	END;
+  
+**** 2/14/2013 WE STOPPED HERE. THINKING ABOUT LABELS FOR CONFIDENCE LIMITS WHEN POWER IS MISSING ***;  
   
 IF CLTYPE =1 THEN DO; 
 
@@ -3377,6 +3472,8 @@ IF CLTYPE =1 THEN DO;
           	END;
       	IF (FMETHOD_U = 4) & (PROB = 1) THEN POWER_U = ALPHASCALAR;
                                         ELSE POWER_U = 1 - PROB;
+  
+POWMISSING: ;
                                         
         *** Assemble output vectors ***;                                		
 	LBL = COMPRESS(CONCAT(LBL,"_L") || LBL || CONCAT(LBL,"_U"));  
