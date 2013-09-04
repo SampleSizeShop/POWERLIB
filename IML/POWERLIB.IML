@@ -2840,6 +2840,8 @@ START _LASTUNI (POWER, LBL, POWERWARN,
                 UCDFTEMP, UMETHODTEMP)
         GLOBAL (CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE, 
         	NONCENCL);
+        	
+DEBUG=1;
 
 *** POWERCALC=   5=>UN 6=>HF 7=>GG 8=>Box ***;
 OPTPOWERCALC1LBL = {"COLLAPSE" "HLT" "PBT" "WLK"  "UN" "HF" "GG"  "BOX"}`;
@@ -2863,7 +2865,7 @@ Q4 = SIGSTAR[##];     SLAM2=Q4/(Q1#Q1);
 Q5 = TRACE(SIGSTAR*H);
 LAMBAR = Q1/B;
 
-IF NCOL(N_EST) = 0 AND NCOL(N_IP)=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+IF NCOL(N_EST) = 0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
@@ -2873,7 +2875,7 @@ IF NCOL(N_EST) = 0 AND NCOL(N_IP)=0 THEN DO; ***Enter loop to compute E1-E5 base
 	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
 	END;
 
-ELSE IF NCOL(N_EST)>0 AND NCOL(N_IP=0) THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
+ELSE IF NCOL(N_EST)>0 THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
 
    	NU_EST = N_EST-RANK_EST;
    	IF NU_EST<=0 THEN DO;
@@ -2900,9 +2902,6 @@ ELSE IF NCOL(N_EST)>0 AND NCOL(N_IP=0) THEN DO; *** Enter loop to compute E1-E5 
  	CL1DF = B # NU_EST # E_4 / E_3_5;
         END;
 
-ELSE IF NCOL(N_IP) > 0 THEN DO;
-	END;
-
 **********************;
 *10/30/06 ;***IF TASK="IP" THEN DO;
     N1=10;
@@ -2911,28 +2910,18 @@ ELSE IF NCOL(N_IP) > 0 THEN DO;
 
     CALL _FIRSTUNI (D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
                SIGSTAR, B)  ; *replace by adding to input list;
-**REASON WE RUN THIS IS BECAUSE WE NEED INPUTS THAT ARENT PASSED;
-**ALSO NEED TO PASS N1, R1, NU1;               
-
-
-**THIS SECTION -- COMPUTE HF;    
+    
 IF (POWERCALC={6}) THEN E_4=_HFEXEPS (B, N1, R1, D, MTP, EPS, DEIGVAL,
                                         SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
                                       SIGMASTAREVEC, UMETHODTEMP);
 E_4=MIN(E_4,{1});
-
-
-***THIS SECTION - COMPUTE GG;
     *GG; IF (POWERCALC={7}) THEN E_4=_GGEXEPS (B, N1, R1, D, MTP, EPS, DEIGVAL, 
                                         SLAM1, SLAM2, SLAM3, SIGMASTAREVAL, 
                                         SIGMASTAREVEC, UMETHODTEMP);
 
-****SECTION BELOW COMMENTED OUT BY KEITH;
 *    	 E4GUESS= ( (NU1+R1)#B#EPS-{2} ) /  ( B#(NU1-B#EPS) )  ;
 *        E4GUESST=MIN({1},E4GUESS);
 *    	IF (POWERCALC={6}) THEN E_4=E4GUESST;
-***SECTION ABOVE COMMENTED OUT BY KEITH;
-
     MOMENTS=TREXPECT(SIGMASTAREVAL,NU1); * =MUPRIME[1:4]//E(Q2)//E(Q2##2)//E(Q1#Q2);
     ET1=MOMENTS[2]/(NU1#NU1);
     ET2=MOMENTS[5]/(NU1#NU1);
@@ -2940,6 +2929,8 @@ E_4=MIN(E_4,{1});
     AE_EPSN_DN=B#( ET2 + {2}#Q5 );
     AEX_EPSN=AE_EPSN_UP/AE_EPSN_DN;
     IF (POWERCALC={6})|(POWERCALC={7}) THEN E_3_5=AEX_EPSN; 
+
+IF DEBUG=1 THEN PRINT E_1_2 E_4 E_3_5;
 ************END;
 
 
