@@ -780,29 +780,6 @@ OPTWARNPRINTLBL    = {WARN}`;
 ***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
 OPTPOWERCALC1      = {    1     1   1   1  0  0  1  0  }`;
 OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF GG BOX}`;
-*NOTEJLJ - put chi muller statistic inbetween HF and GG;
-*NOTEJLJ - call this CM - is UEPSDPS on REPEATED statement in PROC GLM;
-*NOTEJLJ- so add another statistic, code is defined by powerlib;
-*NOTEJLJ - options LTFR, FRACREPN, ORTHU, UNIFORCE need to work the same way for CM as for other UNIREP statistics
-*NOTEJLJ - only the degrees of freedom change
-*NOTEJLJ - have to fiddle with EXEPS
-*NOTEJLJ - create a new module _CMEXEPS akin to EXEPS modules for GG and HF
-*NOTEJLJ - what we're calling HF in POWERLIB isn't tradtional HF, adds Gribbin fiddle
-*NOTEJLJ - Chi Muller Test is implemented in POWERLIB as HF??
-*NOTEJLJ - Chi Muller Test 2 in paper is what we're implemented. Test 1 is alread implemented.;
-*NOTEJLJ - Will be able to get rid of UBANDAID
-*NOTEJLJ - Block of code 1866-1872 go into CMEXEPS module. Then deal with branching;
-*NOTEJLJ - Change order of POWERCALC if it's straightforward to renumber;
-*NOTEJLJ - new PROC GLM in SAS doesn't do UNIFORCE
-*NOTEJLJ - example of when you might want to use this is when you have thousands of genes and say 40 subjects
-*NOTEJLJ - need to do some fussing about how we decide a covariance matrix is full rank
-*NOTEJLJ - SIGMASTAR is y*yprime, but for this case we want to look at yprime*y
-*NOTEJLJ - but for power analysis, sigma is legitmately 1000 by 1000, say not 40*40
-*NOTEJLJ - nervous about internal pilot part
-*NOTEJLJ - lines 3143-3145, guess that for CM, use EPSTILDE_RM*UBANDAID;
-*NOTEJLJ - GG and HF have random critical values. IP must account for this, lines 3155-3170.
-*NOTEJLJ - Keith thinks this section should be if powercalc in (6,7,8)
-
 OPTPOWERCALC2      = { 0       0        0        0   }`;
 OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU  UNIFORCE}`;
 
