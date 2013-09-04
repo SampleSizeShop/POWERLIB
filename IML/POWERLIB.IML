@@ -153,8 +153,8 @@
 *    Uses methods of Taylor and Muller (1995) for univariate models.    *;
 *    not yet been extended for the UNIREP tests.**                      *;
 *                                                                       *;   
-*    (16) CLTYPE, (scalar)                                              *;
-*                                                                       *;
+*    (16) CLTYPE, (scalar) determines whether confidence intervals      *;
+*								are produced																						*;
 *       <1 or 0 by 0 matrix (never defined, or FREE-ed)                 *;
 *          if confidence intervals for power **not** desired            *;
 *       =1 if BETA known    , SIGMA estimated and CL desired            *;
@@ -172,10 +172,15 @@
 *    (20) ALPHA_CU, (scalar) upper tail probability for power C.L.      *;
 *                  default=.025                                         *;
 *                                                                       *;
-*    (21) DSNAME, (1 row, 2-4 cols), name of output SAS data file.      *;
+*    (21) SIGTYPE, (scalar)																							*;
+*                                                                       *;
+*				=0 	if SIGMA known (default)															      *;
+*				=1	if SIGMA estimated	(required if CLTYPE>=1)						      *;
+*                                                                       *;					
+*    (22) DSNAME, (1 row, 2-4 cols), name of output SAS data file.      *;
 *         Default WORK.PWRDT###.                                        *;
 *                                                                       *;
-*    (22) OPT_ON, OPT_OFF, (vectors), users can specify the options     *;
+*    (23) OPT_ON, OPT_OFF, (vectors), users can specify the options     *;
 *         they wish to turn on or off. The possible options are as      *;
 *         follows:                                                      *;
 *                                                                       *;
@@ -371,7 +376,7 @@ FINISH POWER;
 *		            internal pilot design					                          *;
 *	      N_IP,	ASK KEITH ABOUT THIS					                            *;
 *	      RANK_IP, ASK KEITH ABOUT THIS					                          *;	
-*       CLTYPE, (scalar)                                                *;
+*       CLTYPE, (scalar) choice of whether confidence limits produced   *;
 *               <1    or 0 by 0 matrix (never defined, or FREE-ed)      *;
 *                  if confidence intervals for power **not** desired    *;
 *               =1 if BETA known    , SIGMA estimated and CL desired    *;
@@ -384,6 +389,7 @@ FINISH POWER;
 *                  default=.025                                         *;
 *       ALPHA_CU, (scalar) upper tail probability for power C.L.        *;      
 *                  default=.025                                         *;
+*				SIGTYPE, (scalar) choice of whether SIGMA is known or estimated *;
 *       DSNAME, (row) name of output dataset                            *;
 *       OPT_ON, (column) selected options to turn on                    *;
 *       OPT_OFF, (column) selected options to turn off                  *;
@@ -402,7 +408,7 @@ START _POWER (HOLDPOWER, HOLDPOWERLBL, POWERWARN, POWERWARNLBL)
                 REPN, BETASCAL, SIGSCAL, RHOSCAL, ALPHA,
                 ROUND, TOLERANCE, TOLERANC, UCDF, UMETHOD, MMETHOD,
                 IP_PLAN, N_IP, RANK_IP,	
-                LIMCASE, CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU,
+                LIMCASE, CLTYPE, N_EST, RANK_EST, ALPHA_CL, ALPHA_CU, SIGTYPE,
                 DSNAME, OPT_ON, OPT_OFF);
                 
 ***A) Initial Setup;
@@ -592,6 +598,12 @@ IF NROW(ALPHA_CU) = 0 THEN DO;
         HITLIST = HITLIST // {ALPHA_CU};
         END;
         
+IF NROW(SIGTYPE) = 0 THEN DO;
+        SIGTYPE = 0 ;
+        HITLIST = HITLIST // {SIGTYPE};
+        END;   
+     
+        
 IF NROW(DSNAME) = 0 THEN DO;
         DSNAME = {WORK DODFAULT WORK};
         HITLIST = HITLIST // {DSNAME};
@@ -669,6 +681,8 @@ CHECKER = CHECKER + _TYPEMISSCHK(ALPHA_CL,"ALPHA_CL","N");
 
 CHECKER = CHECKER + _TYPEMISSCHK(ALPHA_CU,"ALPHA_CU","N");
 
+CHECKER = CHECKER + _TYPEMISSCHK(SIGTYPE ,"SIGTYPE" ,"N");
+
 CHECKER = CHECKER + _TYPEMISSCHK(DSNAME, "DSNAME", "C");
                 
 IF CHECKER > 0 THEN GO TO ERROREND;
@@ -740,10 +754,13 @@ OPTPOWERCALC2      = { 0       0        0  }`;
 OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU}`;
 
 ***OPTPOWERMAT1 and OPTPOWERMAT2 specify what includeD in the output matrix;
-OPTPOWERMAT1A      
-        = {    0       1       1      0        1         1       0    }`;
+IF SIGTYPE=0 THEN
+			OPTPOWERMAT1A      
+        = {    0       1       1      0        1         1       0    		0}`;
+ELSE IF SIGTYPE=1 THEN OPTPOWERMAT1A      
+        = {    0       1       1      0        1         1       0    		1}`;
 OPTPOWERMAT1ALBL   
-        = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ}`;
+        = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ  SIGTYPE}`;
         
 IF CLTYPE < 1 THEN
      OPTPOWERMAT1B = {   0      0      0        0        0   }`;
@@ -1302,19 +1319,47 @@ IF CLTYPE >= 1 THEN DO;
                       ALPHA_CL , ALPHA_CU;
                 GO TO ERROREND;
                 END;
-        
-        /*IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) | 
-             (OPTPOWERCALC1[7,1] = 1) | (OPTPOWERCALC1[8,1] = 1) THEN DO;
-                NOTE = CONCAT("WARNING 9: Current theory has not yet been ", 
-                              "extended for CL of power of UNIREP tests. ", 
-                              "Confidence limits for all UNIREP test ", 
-                              "powers have been omitted.");
-                IF OPTWARNPRINT THEN 
-                    PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
-        END;*/
                                 
         END;
+
+***F.11) Check SIGTYPE;
+
+IF (NROW(SIGTYPE) + NCOL(SIGTYPE)) ^= 2 THEN DO;
+        NOTE = "ERROR 94: SIGTYPE must be a 1 by 1 matrix" ;
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGTYPE;
+        GO TO ERROREND;
+        END;
         
+IF (SIGTYPE >1) THEN DO;
+        NOTE = CONCAT("ERROR 95: Invalid SIGTYPE. SIGTYPE must be ",
+                      "0 or 1.");
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "], SIGTYPE;
+        GO TO ERROREND;
+        END;
+
+***F.12) Check intersection of values of CLTYPE, SIGTYPE, and IP_PLAN;
+
+IF SIGTYPE=1 & IP_PLAN=1 THEN DO;    
+        NOTE = CONCAT("ERROR 91: SIGMA must be known when planning an ", 
+        							 "internal pilot. Set SIGTYPE=0 or IP_PLAN=0.") ;
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , SIGTYPE, IP_PLAN;
+        GO TO ERROREND;
+        END;    
+
+IF CLTYPE>=1 & IP_PLAN=1 THEN DO;
+        NOTE = CONCAT( "ERROR 92: Confidence intervals are not valid ", 
+        							 "when planning an internal pilot. Set CLTYPE<1 ",
+        							 "or IP_PLAN=0.");
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , CLTYPE, IP_PLAN;
+        GO TO ERROREND;
+        END;
+
+IF CLTYPE>=1 & SIGTYPE=0 THEN DO;
+        NOTE = CONCAT( "ERROR 93: SIGMA must be estimated when confidence ",
+        							 "intervals are produced. Set CLTYPE<1 or SIGTYPE=1.");
+        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , CLTYPE, SIGTYPE;
+        GO TO ERROREND;       
+        END;
 
 ***G) Checks on matrices to prepare for power calculation;
 
@@ -1558,6 +1603,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
 ***H.2) select sigma;
 
   DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
+
     SIGMASCALAR = SIGSCALTEMP[SIGMACNT,1];
     *** Compute sigscaled covariance matrix;
     SIGMASCALED1 = SIGMA # SIGMASCALAR;
@@ -1607,7 +1653,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
       SIGMASCALED2 = DIAG(STDEVSCALED) * RHOSCALED2 * DIAG(STDEVSCALED);
       SIGMASTAR = UTEMP` * SIGMASCALED2 * UTEMP;
       SIGMASTAR = (SIGMASTAR + SIGMASTAR`) / 2;   ***To insure symmetry;
-      CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);
+      CALL EIGEN(SIGMASTAREVAL, SIGMASTAREVEC, SIGMASTAR);          
       SIGMASTARLBL = {"U`*SIGMA*U"};
       RANKSIGMASTAR = _RANKSYMM(SIGMASTAR, SIGMASTARLBL);
       IF RANKSIGMASTAR ^= B THEN DO;
@@ -1620,10 +1666,20 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
         GO TO ERROREND;
         END;
 
+***H.8.a) Start UNIREP power calcs, if any;
+          
+          IF MAX( OPTPOWERCALC1[ {5}:{8} ] ) THEN DO;
+             CALL _FIRSTUNI(D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
+                             SIGMASTAR, B);
+              *** Find first requested UNIREP test so include epsilon;
+              FIRSTUNI= {4} + MIN( LOC( OPTPOWERCALC1[ {5}:{8} ] ) ) ;
+              END;
+
 
 ***H.4) Select Beta;
-        
+       
       DO BETACNT = 1 TO NROW(BETASCALTEMP);
+
         BETASCALAR = BETASCALTEMP[BETACNT,1];
         BETASCALED = BETA # BETASCALAR;
         THETA  = C * BETASCALED * UTEMP;
@@ -1633,6 +1689,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
 ***H.5) Select N;
                         
         DO NCNT = 1 TO NROW(REPNTEMP);
+   
           POWERCASE = POWERCASE + 1;
           N = REPNTEMP[NCNT,1] # NROW(ESSENCEX);
         
@@ -1649,8 +1706,8 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
 
 
 ***H.6) Eigenvalues for H*INV(E);
-          
-          EPS=.;
+     
+     IF MAX( OPTPOWERCALC1[ {2}:{4} ] ) THEN DO;     
           IF (N - R) <= 0 THEN DO;
             EVAL = J(S,1,.);
             RHOSQ = . ;
@@ -1667,7 +1724,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
             FINV = INV(HALF(E))`;
             HEIORTH = FINV * H * FINV`;
             HEIORTH = (HEIORTH + HEIORTH`) / 2;         *** Insure symmetry;
-            EVAL = EIGVAL(HEIORTH);        
+            EVAL = EIGVAL(HEIORTH);     
             EVAL = EVAL[1:S,1];                 *** At most S nonzero;
             EVAL = EVAL # (EVAL > TOLERANCE);   
                 *** Set evals<tolerance to zero;
@@ -1678,23 +1735,52 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
             CANCORR = ROUND(CANCORR, ROUNDOFF);
             CANCORRMAX = CANCORR[1,1]; ***Largest;
             END;
+          END; 
 
+
+***H.1) Select alpha;
+
+DO ALPHACNT = 1 TO NROW(ALPHATEMP);
+  ALPHASCALAR = ALPHATEMP[ALPHACNT,1];
 
 ***H.7) Initialize output          
 ***     Set maximum possible output for power table;
 ***     Then delete unrequested options;
+
+***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
+OPTPOWERCALC1      = {    1     1   1   1  0  0  1  0  }`;
+OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF GG BOX}`;
+OPTPOWERCALC2      = { 0       0        0  }`;
+OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU}`;
+
+***OPTPOWERMAT1 and OPTPOWERMAT2 specify what includeD in the output matrix;
+IF SIGTYPE=0 THEN
+			OPTPOWERMAT1A      
+        = {    0       1       1      0        1         1       0    		0}`;
+ELSE IF SIGTYPE=1 THEN OPTPOWERMAT1A      
+        = {    0       1       1      0        1         1       0    		1}`;
+OPTPOWERMAT1ALBL   
+        = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ  SIGTYPE}`;
+        
+IF CLTYPE < 1 THEN
+     OPTPOWERMAT1B = {   0      0      0        0        0   }`;
+ELSE OPTPOWERMAT1B = {   1      0      0        1        1   }`;
+OPTPOWERMAT1BLBL   = {CLTYPE N_EST RANK_EST ALPHA_CL ALPHA_CU}`;
+
+IF IP_PLAN = 0 THEN
+     OPTPOWERMAT1C = {   0      0      0  }`;
+ELSE OPTPOWERMAT1C = {   1      0      0  }`;
+OPTPOWERMAT1CLBL   = {IP_PLAN N_IP RANK_IP}`;
           
-          OUTPUT = POWERCASE || ALPHASCALAR || SIGMASCALAR || RHOSCALAR 
-                             || BETASCALAR  || N || CANCORRMAX;
-          IF CLTYPE >= 1 THEN 
-                OUTPUT = OUTPUT || CLTYPE || N_EST || RANK_EST || 
-                       ALPHA_CL || ALPHA_CU;
-          IF IP_PLAN = 1 THEN DO;          	
-            IF CLTYPE >=1 THEN 
-             	 OUTPUT = OUTPUT || IP_PLAN || N_IP || RANK_IP;
-            ELSE OUTPUT = OUTPUT || CLTYPE || {0 0 0 0}
-            		   || IP_PLAN || N_IP || RANK_IP;
-            END;
+          OUTPUT = POWERCASE || ALPHASCALAR || SIGMASCALAR || RHOSCALAR || BETASCALAR  || N || CANCORRMAX || SIGTYPE;
+          IF CLTYPE<1 THEN
+          			OUTPUT=OUTPUT|| CLTYPE || {0 0} || ALPHA_CL || ALPHA_CU;
+          ELSE IF CLTYPE>=1 THEN
+          			OUTPUT=OUTPUT|| CLTYPE || N_EST || RANK_EST || ALPHA_CL || ALPHA_CU;
+          IF IP_PLAN=0 THEN
+          			OUPUT=OUTPUT||IP_PLAN || {0 0};          
+          ELSE IF IP_PLAN=1 THEN
+          			OUTPUT=OUTPUT||IP_PLAN||N_IP||RANK_IP;
           IF NROW(KEEPOUT) = 0 THEN DO;
             FREE OUTPUT;
             IF NROW(HOLDPOWERLBL) > 0 THEN FREE HOLDPOWERLBL;
@@ -1707,14 +1793,6 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
 
 ***H.8) Compute requested power calculations;
 
-***H.8.a) Start UNIREP power calcs, if any;
-          
-          IF MAX( OPTPOWERCALC1[ {5}:{8} ] ) THEN DO;
-             CALL _FIRSTUNI(D, MTP, EPS, DEIGVAL, SLAM1, SLAM2, SLAM3,
-                             SIGMASTAR, B);
-              *** Find first requested UNIREP test so include epsilon;
-              FIRSTUNI= {4} + MIN( LOC( OPTPOWERCALC1[ {5}:{8} ] ) ) ;
-              END;
 
 ***H.8.b) Select requested power calculations;
 ***             POWERCALC = 1 --> Univariate test or all mult tests coincide;
@@ -1776,7 +1854,7 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
                               UCDFTEMP, UMETHODTEMP);
                 END;
             
-            IF POWERCALC = 7 THEN DO; 
+            IF POWERCALC = 7 THEN DO;
                 IF (N - R) <= 0 THEN EXEPS=.; 
                 ELSE EXEPS  = _GGEXEPS(B, N, R, D, MTP, EPS, DEIGVAL, SLAM1, 
                                        SLAM2, SLAM3, SIGMASTAREVAL, 
@@ -1832,7 +1910,8 @@ DO ALPHACNT = 1 TO NROW(ALPHATEMP);
                ((S > 1) & (ANY(OPTPOWERCALC1[6:7,1]) = 1)) |            
                ((S > 1) & (ANY(OPTPOWERCALC1[2:4,1]) = 1))              
                         THEN POWERWARN[21,1] = POWERWARN[21,1] + 1;
-            END;     
+            END;  
+  END;          *** Alpha;   
           END;  *** Repn;
         END;    *** Beta;
       END;      *** Rho;
@@ -1953,6 +2032,7 @@ DO CNT = 1 TO NROW(HITLIST);
         ELSE IF HITLIST[CNT] = {CLTYPE}    THEN FREE CLTYPE;
         ELSE IF HITLIST[CNT] = {ALPHA_CL}  THEN FREE ALPHA_CL;
         ELSE IF HITLIST[CNT] = {ALPHA_CU}  THEN FREE ALPHA_CU;
+        ELSE IF HITLIST[CNT] = {SIGTYPE}    THEN FREE CLTYPE;
         ELSE IF HITLIST[CNT] = {DSNAME}    THEN FREE DSNAME;
         END;
 
@@ -2970,8 +3050,8 @@ FINISH _GGEXEPS;
 *                                                                       *;
 * 2) User supplied  (or program default) - GLOBAL                       *;
 *                                                                       *;
-*       IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, ALPHA_CL, 	*;
-*	ALPHA_CU, ROUND     						*;
+*       IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, ALPHA_CL, 	    *;
+*	      ALPHA_CU, ROUND, SIGTYPE     						                        *;
 *                                                                       *;   
 * OUTPUTS                                                               *;
 *                                                                       *;
@@ -2987,7 +3067,7 @@ START _LASTUNI (POWER, LBL, POWERWARN,
                 ALPHASCALAR, FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC, 
                 UCDFTEMP, UMETHODTEMP)
         GLOBAL (IP_PLAN, N_IP, RANK_IP, CLTYPE, N_EST, RANK_EST, 
-        	ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE);
+        	ALPHA_CL, ALPHA_CU, ROUND, TOLERANCE, SIGTYPE);
 
 DEBUG=0;
 
@@ -3012,7 +3092,7 @@ Q4 = SIGSTAR[##];
 Q5 = TRACE(SIGSTAR*H);
 LAMBAR = Q1/B;
 
-IF NCOL(N_EST) = 0 & NCOL(N_IP)=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
+IF SIGTYPE=0 THEN DO; ***Enter loop to compute E1-E5 based on known SIGMA***;
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
@@ -3022,7 +3102,7 @@ IF NCOL(N_EST) = 0 & NCOL(N_IP)=0 THEN DO; ***Enter loop to compute E1-E5 based 
 	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
 	END;
 
-ELSE IF NCOL(N_EST)>0 & NCOL(N_IP=0) THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
+ELSE IF SIGTYPE=1 THEN DO; *** Enter loop to compute E1-E5 based on estimated SIGMA ***;
 
    	NU_EST = N_EST-RANK_EST;
    	IF NU_EST<=0 THEN DO;
@@ -3049,29 +3129,33 @@ ELSE IF NCOL(N_EST)>0 & NCOL(N_IP=0) THEN DO; *** Enter loop to compute E1-E5 ba
    	CL1DF = B # NU_EST # E_4 / E_3_5;
     END;
 
-ELSE IF NCOL(N_IP) > 0 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
-
-	** NEED ADDITIONAL BRANCHING FOR IP + CL - ASK KEITH **;
+ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
 
 	NU_IP = N_IP - RANK_IP;
 	E_1_2 = EXEPS;
 	E_4 = EPS;
+		
+	    IF (POWERCALC={6})|(POWERCALC={7}) THEN DO;
+	    	***The next five lines copied and modified from Keith TREXPECT module in file TREX01**;
+				LAMBDAP=SIGMASTAREVAL||(SIGMASTAREVAL##2)||(SIGMASTAREVAL##3)||(SIGMASTAREVAL##4);	
+				SUMLAM=LAMBDAP[+,]`;
+				KAPPA={1,2,8,48}#NU_IP#SUMLAM;
+				MUPRIME2= KAPPA[2] + KAPPA[1]##{2};
+				MEANQ2=NU_IP#(NU_IP+1)#SUMLAM[2]+NU_IP#SUM(SIGMASTAREVAL*SIGMASTAREVAL`);
 	
-    	MOMENTS = TREXPECT(SIGMASTAREVAL, NU_IP); * =MUPRIME[1:4]//E(Q2)//E(Q2##2)//E(Q1#Q2);
-    	ET1 = MOMENTS[2]/(NU_IP#NU_IP);
-    	ET2 = MOMENTS[5]/(NU_IP#NU_IP);
-    	AE_EPSN_UP = ET1 + {2}#Q1#Q2;
-    	AE_EPSN_DN = B#( ET2 + {2}#Q5 );
-    	AEX_EPSN = AE_EPSN_UP / AE_EPSN_DN;
-	    IF (POWERCALC={6})|(POWERCALC={7}) THEN E_3_5=AEX_EPSN; 
+    		ET1 = MUPRIME2/(NU_IP#NU_IP); 
+    		ET2 = MEANQ2/(NU_IP#NU_IP); 
+    		AE_EPSN_UP = ET1 + {2}#Q1#Q2;
+    		AE_EPSN_DN = B#( ET2 + {2}#Q5 );
+    		AEX_EPSN = AE_EPSN_UP / AE_EPSN_DN;
+	     	E_3_5=AEX_EPSN; PRINT E_3_5 ET1 ET2; 
+	     	END;
 	    ELSE DO;
 	    	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 				EPSN_DEN = Q4 + Q5 # (2/A);
 				EPSN = EPSN_NUM / (B # EPSN_DEN);
 				E_3_5 = EPSN;
 				END;
-				    
-	IF DEBUG=1 THEN PRINT E_1_2 E_4 E_3_5 MOMENTS ET1 ET2 AE_EPSN_UP AE_EPSN_DN AEX_EPSN POWERCALC;
 	
 	END;
 
