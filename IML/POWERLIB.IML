@@ -76,7 +76,7 @@
 *       UCDF[1] --> Uncorrected test                                    *;
 *       UCDF[2] --> Huynh-Feldt test                                    *;
 *       UCDF[3] --> Geisser-Greenhouse test                             *;
-*       UCDF[4] --> Box conservative test                               *;                                                                                      *;
+*       UCDF[4] --> Box conservative test                               *;
 *       Where:                                                          *;
 *                                                                       *;
 *       UCDF[J] =1 --> Muller and Barton (1989) approximation           *;
@@ -118,7 +118,7 @@
 *    O'Brien & Shieh (1992, OS) recommended multipling noncentrality by *;
 *    N/[N-rankk(X)] if min(rk(C),rk(U))>1 for multivariate tests.       *;
 *                                                                       *;
-*    (12) MMETHOD default= {4,2,2};                                     *;
+*    (12) MMETHOD default= {4,2,2}                                      *;
 *    MMETHOD[1]  Choices for Hotelling-Lawley Trace                     *;
 *              = 1  Pillai (1954, 55) 1 moment null approx              *;
 *              = 2  McKeon (1974) two moment null approx                *;
@@ -150,7 +150,7 @@
 *    The following 5 parameters control creation of confidence intervals*;
 *    for power values of univariate, UNIREP, and MULTIREP tests.        *; 
 *    Uses methods of Taylor and Muller (1995) for univariate models.    *;
-*    not yet been extended for the UNIREP tests.**                      *;
+*    not yet been extended for the UNIREP tests.                        *;
 *                                                                       *;   
 *    (16) CLTYPE, (scalar) determines whether confidence intervals      *;
 *								are produced																						*;
@@ -387,8 +387,10 @@ FINISH POWER;
 *		            and Wilk's Lambda multivariate tests.			              *;
 *	      IP_PLAN, (scalar) flag to compute power in planning an		      *;
 *		            internal pilot design					                          *;
-*	      N_IP,	ASK KEITH ABOUT THIS					                            *;
-*	      RANK_IP, ASK KEITH ABOUT THIS					                          *;	
+*	      N_IP,	(scalar) # of observations planned for the internal			  *;
+*								pilot of the future study	(required if IP_PLAN=1)				*;
+*	      RANK_IP, (scalar) rank of the design matrix used in						  *;
+*							the future study (required if IP_PLAN=1)				          *;	
 *       CLTYPE, (scalar) choice of whether confidence limits produced   *;
 *               <1    or 0 by 0 matrix (never defined, or FREE-ed)      *;
 *                  if confidence intervals for power **not** desired    *;
@@ -774,7 +776,7 @@ ELSE IF SIGTYPE=1 THEN OPTPOWERMAT1A
         = {    0       1       1      0        1         1       0    		1}`;
 OPTPOWERMAT1ALBL   
         = {POWERCASE ALPHA  SIGSCAL RHOSCAL BETASCAL  TOTAL_N MAXRHOSQ  SIGTYPE}`;
-        
+
 IF CLTYPE < 1 THEN
      OPTPOWERMAT1B = {   0      0      0        0        0   }`;
 ELSE OPTPOWERMAT1B = {   1      0      0        1        1   }`;
@@ -801,7 +803,6 @@ OPTPRINTLBL        = {NOPRINT}`;
 ***power matrix;
 OPTDATASET         = {0}`;
 OPTDATASETLBL      = {DS}`;
-
 
 
 ***E.3) Check and set user selected options;
@@ -983,14 +984,14 @@ IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
         END; *COLLAPSE is "on";
      
         ***COLLAPSE is "off" treated in following;
-IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & OPTWARNPRINT &CFLAG=0 THEN DO;
+IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & CFLAG=0 THEN DO;
         IF (B = 1) THEN DO;     
                 NOTE = CONCAT("WARNING 4: B = 1, so that all tests ",
                               "coincide (univariate case). To print ",
                               "powers with one overall heading of POWER ",
                               "(thereby reducing the amount of output) ", 
                               "remove OPT_OFF = {COLLAPSE}.");
-                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+                IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
                 END; 
         IF (B > 1) THEN DO;
                 NOTE = CONCAT("WARNING 5: A = 1, B > 1, so that all ", 
@@ -998,7 +999,7 @@ IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & OPTWARNPRINT &CFLAG=0 THEN DO;
                               "with one overall heading of POWER_MULT ", 
                               "(thereby reducing the amount of output) ",
                               "remove OPT_OFF = {COLLAPSE}.");
-                PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+                IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
                 END;
         END;
         
@@ -1114,7 +1115,7 @@ IF NROW(SETDIF(UCDFTEMP,{1 2 3 4})) > 0 THEN DO;
 
 IF NROW(UCDFTEMP) = 1 THEN UCDFTEMP = UCDF // UCDF // UCDF // UCDF;
 
-IF (ANY(UCDFTEMP = 1) > 0) & OPTWARNPRINT THEN DO;
+IF (ANY(UCDFTEMP = 1) > 0) THEN DO;
         NOTE = CONCAT("WARNING 7: You have chosen the Muller, Barton ",
                       "(1989) approximation for the UNIREP statistic CDF. ", 
                       "Muller, Edwards, Taylor (2004) found NO condition ", 
@@ -1122,7 +1123,7 @@ IF (ANY(UCDFTEMP = 1) > 0) & OPTWARNPRINT THEN DO;
                       "Muller, Barton approximation.  Suggest specifying ",
                       "UCDF={2}; unless you are performing a backwards ",
                       "comparison calculation.");
-        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , UCDF;
+        IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , UCDF;
         END;
 
 ***F.7) Check UMETHOD;
@@ -1392,11 +1393,11 @@ IF MIN(VECDIAG(SIGMA)) <= TOLERANCE THEN DO;
         PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "] , TOLERANCE , SIGMA ;
         END;
 
-IF (NCOL(SIGMA) = 1) & OPTWARNPRINT THEN DO;
+IF (NCOL(SIGMA) = 1) THEN DO;
         NOTE = CONCAT("WARNING 10: SIGMA is a scalar. For this program, ",
                       "a scalar SIGMA must equal the variance, NOT the ",
                       "standard deviation.");
-        PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+        IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
         END;
 
 IF (NROW(U) ^= NROW(SIGMA)) THEN DO;
@@ -1549,7 +1550,7 @@ IF OPTPOWERCALC2[4,1]=1 THEN DO;
 						"and orthogonal to a Px1 column of 1's. This option should be used ", 
 						"WITH CAUTION. The user accepts responsibility for the results being ", 
 						"the ones desired."); 
-		PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+		IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
     END;
 
 UTEMP = U;
@@ -1705,12 +1706,12 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
       	POWERCASE = POWERCASE + 1;
         N = REPNTEMP[NCNT,1] # NROW(ESSENCEX);
         
-        IF (INT(N) ^= N) & OPTWARNPRINT THEN DO;
+        IF (INT(N) ^= N) THEN DO;
         	NOTE = CONCAT("WARNING 14: You have specified a design ",
                         "with non-integer N.  In doing so, you are ",
                         "responsible for correct interpretation of ",
                         "the results.");
-          PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+          IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
           END;    
           
         E = SIGMASTAR # (N - R);  ***Not used if (N - R) <= 0 ;
@@ -1770,6 +1771,7 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
           			OUPUT=OUTPUT||IP_PLAN || {0 0};          
           ELSE IF IP_PLAN=1 THEN
           			OUTPUT=OUTPUT||IP_PLAN||N_IP||RANK_IP;
+
           IF NROW(KEEPOUT) = 0 THEN DO;
             FREE OUTPUT;
             IF NROW(HOLDPOWERLBL) > 0 THEN FREE HOLDPOWERLBL;
@@ -1867,7 +1869,7 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
                               FIRSTUNI, SIGMASTAREVAL, SIGMASTAREVEC, 
                               UCDFTEMP, UMETHODTEMP);
                 END;
-            
+           
 
 ***H.8.c) Append all requested power calculations in a row;
             
@@ -2019,7 +2021,7 @@ DO CNT = 1 TO NROW(HITLIST);
         ELSE IF HITLIST[CNT] = {CLTYPE}    THEN FREE CLTYPE;
         ELSE IF HITLIST[CNT] = {ALPHA_CL}  THEN FREE ALPHA_CL;
         ELSE IF HITLIST[CNT] = {ALPHA_CU}  THEN FREE ALPHA_CU;
-        ELSE IF HITLIST[CNT] = {SIGTYPE}    THEN FREE CLTYPE;
+        ELSE IF HITLIST[CNT] = {SIGTYPE}   THEN FREE SIGTYPE;
         ELSE IF HITLIST[CNT] = {DSNAME}    THEN FREE DSNAME;
         END;
 
