@@ -223,7 +223,9 @@
 *                    orthonormal U for user         OFF                 *;
 *																																				*;
 *							UNIFORCE, allow non orthonormal U			OFF									*;
-*										from user																						*;					
+*										from user																						*;	
+*                                                                       *;
+*             CMWARN, allows only B<=3000           ON                  *;				
 *                                                                       *;
 *           b) Print/options for output power matrix (SAS dataset)      *;
 *                                                                       *;
@@ -768,8 +770,8 @@ OPTWARNPRINTLBL    = {WARN}`;
 ***OPTPOWERCALC1 and OPTPOWERCALC2 contain power calculation options; 
 OPTPOWERCALC1      = {    1     1   1   1  0  0  0   1  0  }`;
 OPTPOWERCALC1LBL   = {COLLAPSE HLT PBT WLK UN HF CM GG BOX}`;
-OPTPOWERCALC2      = { 0       0        0        0   }`;
-OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU  UNIFORCE}`;
+OPTPOWERCALC2      = { 0       0        0        0       1}`;
+OPTPOWERCALC2LBL   = {LTFR  FRACREPN  ORTHU  UNIFORCE  CMWARN}`;
 
 ***OPTPOWERMAT1 and OPTPOWERMAT2 specify what includeD in the output matrix;
 IF SIGTYPE=0 THEN
@@ -1626,6 +1628,27 @@ IF (OPTPOWERCALC1[5,1] = 1) | (OPTPOWERCALC1[6,1] = 1) |
         END;
         
         FREE UDIF;
+
+***G.6) Create B for HDLSS power calculations with the CM option;
+
+IF OPTPOWERCALC2[5,1]=1 & B>3000 THEN DO; 
+    NOTE = CONCAT ("ERROR 96: Current common computer memory size allows computing power for HDLSS models ",
+                   "with <= 3000 repeated measures. Computing power for models with B>3000 may lead to ", 
+                   "program failure due to insufficient memory. Models with B>3000 may be run by specifying ", 
+                   "option OPT_OFF={CMWARN}; however, turning off this option should be done WITH CAUTION. ", 
+                   "The user accepts responsbility for potential program failure due to insufficient memory.");
+		PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+		GO TO ERROREND;
+    END;
+
+IF OPTPOWERCALC2[5,1]=0 & B>3000 THEN DO; 
+    NOTE = CONCAT ("WARNING 18: You have turned off option CMWARN, allowing power to be ",
+                   "computed for HDLSS models with >3000 repeated measures. Computing power for ", 
+                   "models with B>3000 may lead to program failure due to insufficient memory, thus ",
+                   "turning off this option should be done WITH CAUTION. The user accepts responsbility ", 
+                   "for potential program failure due to insufficient memory.");
+		IF OPTWARNPRINT THEN PRINT NOTE[LABEL=" " ROWNAME=" " COLNAME=" "];
+    END;      
 
 ***H) Loop to select ALPHA, BETA, SIGMA, N, and compute power;
 
@@ -3228,6 +3251,9 @@ ELSE IF SIGTYPE=1 THEN DO; *** Enter loop to compute E1-E5 based on estimated SI
     END;
 
 ELSE IF IP_PLAN=1 THEN DO; *** Enter loop to compute E1-E5 when planning IP study ***;
+													*** Case where SIGTYPE=1 and IP_PLAN has not been implemented
+														  since computing power for estimated sigma does not make
+														  sense for planning an internal pilot.
 	NU_IP = N_IP - RANK_IP;
 	E_1_2 = EXEPS;
 	E_4 = EPS;
