@@ -989,7 +989,7 @@ IF OPTPOWERCALC1[1,1] = 1 THEN DO;      ***if COLLAPSE is on;
         END; *COLLAPSE is "on";
      
         ***COLLAPSE is "off" treated in following;
-IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & CFLAG=0 THEN DO;
+IF (OPTPOWERCALC1[1,1] = 0) & (S = 1) & (CFLAG=0) THEN DO;
         IF (B = 1) THEN DO;     
                 NOTE = CONCAT("WARNING 4: B = 1, so that all tests ",
                               "coincide (univariate case). To print ",
@@ -1764,6 +1764,8 @@ DO SIGMACNT = 1 TO NROW(SIGSCALTEMP);
 
 
 ***H.6) Eigenvalues for H*INV(E);
+     
+     		PRINT N R;
      
 				IF MAX( OPTPOWERCALC1[ {1}:{4} ] ) THEN DO;  
  
@@ -3216,7 +3218,7 @@ IF SIGTYPE=0 & IP_PLAN=0 THEN DO; ***Enter loop to compute E1-E5 based on known 
 	EPSN_NUM = Q3 + Q1 # Q2 # (2/A);
 	EPSN_DEN = Q4 + Q5 # (2/A);
 	EPSN = EPSN_NUM / (B # EPSN_DEN);
-	E_1_2 = EXEPS;
+	E_1_2 = EXEPS; 
 	E_4  =  EPS;
 	E_3_5 = EPSN;   			 *** MEST, (CDFPOWERCALC = 2,3,4 ***);
 	IF (CDFPOWERCALC = 1) THEN E_3_5 = EPS;  *** MB ***;
