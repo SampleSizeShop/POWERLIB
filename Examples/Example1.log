@@ -1,0 +1,172 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example1.sas -- Power for two sample t-test with overlay plot";
+4
+5    ***************************************************************;
+6    * Perform power calculations for a two sample T test,          ;
+7    * replicating the results in "Increasing scientific power with ;
+8    * statistical power", by K.E. Muller and V.A. Benignus,        ;
+9    * Neurotoxicology and Teratology, vol 14, May-June, 1992       ;
+10   * The code reports power for a limited number of predicted     ;
+11   * differences in means, compared to the number of values       ;
+12   * needed for plotting.                                         ;
+13   ***************************************************************;
+14
+15   *************************************************;
+16   * Delete data set for power values if it exists *;
+17   *************************************************;
+18
+19   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+20   DELETE PWRDT1;
+21   RUN;
+
+NOTE: The file WORK.PWRDT1 (memtype=DATA) was not found, but appears on a DELETE statement.
+21 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.07 seconds
+      cpu time            0.07 seconds
+
+
+22
+23   **************************************;
+24   * Section that computes power values *;
+25   **************************************;
+26
+27   PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+28   %INCLUDE "&ROOT.\IML\POWERLIB22.IML" / NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5439
+5440  * Define inputs to power program *;
+5441
+5442  SIGMA = {1};
+5443  SIGSCAL = {0.32 1.00 2.05};
+5444
+5445  ESSENCEX = I(2);
+5446  REPN = {10};
+5447
+5448  BETA = {0 1}`;
+5449  BETASCAL = DO(0,2.5,0.05);
+5450  C = {1 -1};
+5451
+5452  OPT_OFF = {C U};
+5453  OPT_ON = {DS};
+5454  * The DS option creates a SAS file with the power calculation results.;
+5455  * Since no dataset name was specified, WORK.PWRDT1 is created.;
+5456
+5457  RUN POWER;
+NOTE: No data sets in the library WORK.
+NOTE: The data set WORK._PWRDTMP has 153 observations and 5 variables.
+5458
+5459  *********************************;
+5460  * Section that creates the plot *;
+5461  *********************************;
+5462
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.24 seconds
+      cpu time            0.21 seconds
+
+
+5463  PROC CONTENTS DATA=PWRDT1;
+5464  RUN;
+
+NOTE: PROCEDURE CONTENTS used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5465
+5466  PROC SORT DATA=PWRDT1 OUT=ONE;
+5467  BY BETASCAL SIGSCAL;
+5468  RUN;
+
+NOTE: There were 153 observations read from the data set WORK.PWRDT1.
+NOTE: The data set WORK.ONE has 153 observations and 5 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5469
+5470  *Create file for power curves of varying VARIANCE;
+5471  PROC TRANSPOSE DATA=ONE OUT=TWO PREFIX=SIGPWR;
+5472  VAR POWER;
+5473  BY BETASCAL;
+5474  RUN;
+
+NOTE: There were 153 observations read from the data set WORK.ONE.
+NOTE: The data set WORK.TWO has 51 observations and 5 variables.
+NOTE: PROCEDURE TRANSPOSE used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+
+
+5475
+5476  ODS GRAPHICS / IMAGENAME="Example1" ;
+5477  ODS LISTING GPATH="&ROOT.\Examples" ;
+5478
+5479  TITLE1;
+5480  PROC SGPLOT DATA=TWO ;
+5481  PBSPLINE Y=SIGPWR1 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=4) NOMARKERS
+5482                                NAME="PWR1" LEGENDLABEL="0.32";
+5483  PBSPLINE Y=SIGPWR2 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=1) NOMARKERS
+5484                                NAME="PWR2" LEGENDLABEL="1";
+5485  PBSPLINE Y=SIGPWR3 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=8) NOMARKERS
+5486                                NAME="PWR3" LEGENDLABEL="2.05";
+5487  LABEL SIGPWR1="Power" BETASCAL="Mean Difference" ;
+5488  XAXIS VALUES=(0 TO 2.5 BY .5) VALUEATTRS=(SIZE=12PT)
+5489      LABELATTRS=(SIZE=12PT);
+5490  YAXIS VALUES=(0 TO 1 BY 0.1) VALUEATTRS=(SIZE=12PT)
+5491      LABELATTRS=(SIZE=12PT);
+5492  KEYLEGEND "PWR1" "PWR2" "PWR3"/ TITLE="Variance" VALUEATTRS=(SIZE=12PT)
+5493      TITLEATTRS=(SIZE=12PT);
+5494  RUN;
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.53 seconds
+      cpu time            0.20 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects In Progress\POWERLIB\Version
+      2.2\Examples\For Submission\Examples\Example1.png.
+NOTE: There were 51 observations read from the data set WORK.TWO.
+

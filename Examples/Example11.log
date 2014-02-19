@@ -1,0 +1,76 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example11.sas -- Illustrate use of the UPOLY1 module";
+4
+5    PROC IML WORKSIZE=1000 SYMSIZE=2000;
+NOTE: Worksize    = 1024000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+6    %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5417
+5418  OPT_ON  = {GG HF HLT PBT TOTAL_N};
+5419  OPT_OFF = {WARN WLK UN COLLAPSE ALPHA SIGSCAL BETASCAL};
+5420
+5421  ALPHA = .05;
+5422  VARIANCE = 1.5;
+5423  RHO = 0.25;
+5424  * Create compound symmetric covariance structure *;
+5425  SIGMA = VARIANCE#(I(5)#(1-RHO) + J(5,5,RHO));
+5426
+5427  ESSENCEX = I(2);
+5428  REPN = {10,20,40};
+5429
+5430  BETASCAL = 1;
+5431  BETA = {0 0 0 0 1,
+5432          1 0 0 0 0};
+5433  C = {1 -1};
+5434
+5435  TIMES ={2 4 6 8 10};
+5436  RUN UPOLY1(TIMES  ,"Time", USCORE , SCORENM );
+5437  U = USCORE;
+5438
+5439  RUN POWER;
+5440  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.26 seconds
+      cpu time            0.26 seconds
+
+

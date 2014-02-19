@@ -1,0 +1,138 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example2.sas -- Power for a paired t-test";
+4
+5    PROC IML SYMSIZE=2000;
+NOTE: Worksize    = 262128
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+6    %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5417
+5418  ESSENCEX = I(1);
+5419  SIGMA = {2 1, 1 2};
+5420  BETA = {0 1};
+5421  C = {1};
+5422  U = {1 -1}`;
+5423
+5424  SIGSCAL = {1};
+5425  BETASCAL = DO(0,2.5,0.5);
+5426  REPN = { 10 };
+5427  OPT_ON = {COLLAPSE};
+5428  OPT_OFF= {C U};
+5429
+5430  RUN POWER;
+5431  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.25 seconds
+      cpu time            0.23 seconds
+
+
+5432
+5433  *******************************************;
+5434  * Section with difference scores          *;
+5435  * Provides output equivalent to the above *;
+5436  *******************************************;
+5437
+5438  PROC IML SYMSIZE=2000;
+NOTE: Worksize    = 262128
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+5439  %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+10850
+10851  ESSENCEX = I(1);
+10852  SIGMA = {2};
+10852!              * Variance of Difference of Means *;
+10853  BETA = {1};
+10854  C = {1};
+10855  U = {1};
+10856
+10857  SIGSCAL= {1};
+10858  BETASCAL = DO(0,2.5,0.5);
+10859  REPN = { 10 };
+10860  OPT_ON = {COLLAPSE};
+10861  OPT_OFF= {C U};
+10862
+10863  RUN POWER;
+10864  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.18 seconds
+      cpu time            0.17 seconds
+
+

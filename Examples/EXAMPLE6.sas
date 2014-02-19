@@ -1,296 +1,101 @@
-TITLE1 "EXAMPLE6.SAS--Confidence limits for a UNIREP test in a multivariate model with plots";
+OPTIONS NODATE NONUMBER PS=55 LS=95;
+TITLE1 "Example6.sas -- Confidence limits for a univariate model test";
 
-LIBNAME IN01 V612 "&ROOT.\Data\";
+******************************************************************************;
+* Creates Figure 1 in Taylor and Muller, 1995, Amer Statistician, 49, p43-47 *;
+******************************************************************************;
 
-*** Section that computes power values ***;
+****************************************************;
+* Delete data sets for power values if they exists *;
+****************************************************;
 
-* Delete data sets for power values if they exist *;
-
-PROC DATASETS LIBRARY=WORK;
-DELETE ONE ONECL ;
+PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+DELETE PWRDT1 PWRDT2 PWRDT3;
 RUN; QUIT;
 
-PROC IML SYMSIZE=2000 WORKSIZE=2000;
-%INCLUDE "&ROOT.\Iml\POWERLIB21.IML"/NOSOURCE2;
+**************************************;
+* Section that computes power values *;
+**************************************;
 
-OPT_ON = {GG HF BOX UN TOTAL_N ORTHU NOPRINT};
-OPT_OFF={WARN ALPHA};
+PROC IML WORKSIZE=1000 SYMSIZE=2000;
+%INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
 
-USE IN01.P0104;
-READ ALL VAR {ANT LEFT POST RIGHT} WHERE(_TYPE_ = "COV") INTO INSIGMA;	*Importing covariance matrix of data*;
+OPT_OFF = {ALPHA};   
+OPT_ON  = {NOPRINT DS}; 
 
-* Rounding and viewing covariance matrix *;
+ESSENCEX = I(2);  *Balanced two group t test, cell mean coding;
+REPN = {12};
 
-RNM={ANT LEFT POST RIGHT};
-ALPHA = .05/6;
-SIGMA = ROUND(INSIGMA,.0001);
-PRINT SIGMA[FORMAT=11.5 COLNAME=RNM];
+BETA = {0 1}`;
+BETASCAL = DO(0,.75,.01);
 
-* Define input matrices for power calcuations *;
+ALPHA={.01}; 
+C    ={1 -1}; 
 
-ESSENCEX = I(10);
-REPN =DO(1,10,1);
+SIGMA  = {.068}; 
+SIGSCAL = {1}   ; 
 
-P = 4;
-Q = 2;
-* Pattern of means for Gender by Region *;
-BETARG= J(2,4, 3.2) + {.30}#({ -1  0 1  0,
-                               -1  0 1  0}) ;	
-PRINT BETARG[COLNAME=RNM];
-BETASCAL={1};
+* Statements to create two-sided confidence limits *;
 
-C = {1 -1} @ J(1,5,1);
+CLTYPE = 1;
+N_EST = 24;        *# Obs for variance estimate;
+RANK_EST = 2;      *# model df for study giving variance estimate;
+ALPHA_CL = .025;   *Lower confidence limit tail size;
+ALPHA_CU = .025;   *Upper confidence limit tail size;
+*Since no dataset name was specified, WORK.PWRDT1 is created.;
 
-REGION = {1,2,3,4};
-RUN UPOLY1(REGION,"REGION",U1,REGU);
-U=U1;
+RUN POWER; 
 
-DO DELTA=0 TO .20 BY .0008;
-  * Creation of Beta matrix based on varying Gender differences *;
-  BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));	
-  * Final Beta matrix with age groups added *;
-  BETA= BETARGD @ J(5,1,1) ;					
-  RUN POWER;
-  HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
-END;
+* Statements to create one-sided lower confidence limits *;
 
-* Create dataset without confidence limits *;
-* Create dataset manually so can appropriately label columns *; 
+CLTYPE = 1;
+N_EST = 24;        *# Obs for variance estimate;
+RANK_EST = 2;      *# model df for study giving variance estimate;
+*Above three statements could have been omitted here since they duplicate 
+those for two sided confidence limits*;
 
-NAMES={"SIGSC" "BETASC" "N" "P_MULT" "EPS" "EXEPS_UN" "P_UN" "EXEPS_HF" "P_HF" "EXEPS_GG" "P_GG" "EXEPS_BOX" "P_BOX" "DELTA"};
-CREATE ONE FROM HOLDALL [COLNAME = NAMES]; 
-APPEND FROM HOLDALL;
-CLOSE ONE;
+ALPHA_CL = 0.05;   *Lower confidence limit tail size;
+ALPHA_CU =   0;    *Upper confidence limit tail size;
+*Since WORK.PWRDT1 already exists, WORK.PWRDT2 is created.;
 
-OPT_OFF={UN BOX HF WLK PBT HLT WARN ALPHA CLTYPE BETASCAL SIGSCAL ALPHA_CL ALPHA_CU};
-OPT_ON={GG ORTHU NOPRINT};
+RUN POWER;
 
-REPN={2,4,8};
+* Statements to create one-sided upper confidence limits *;
 
-* Create dataset with values for confidence limits *;
+ALPHA_CL = 0;      *Lower confidence limit tail size;
+ALPHA_CU = 0.05;   *Upper confidence limit tail size;
+*Since WORK.PWRDT1 and WORK.PWDT2 already exist, WORK.PWRDT3 is created.;
 
-CLTYPE = 1;     *Estimated variance only, with fixed means*;
-N_EST = 21;     *# Obs for variance estimate*;
-RANK_EST = 1;   *# Model DF for study giving variance estimate*;
-ALPHA_CL = .025;   	*Lower confidence limit tail size*;
-ALPHA_CU = .025;   	*Upper confidence limit tail size*;
-
-FREE HOLDALL;
-DO DELTA=0 TO .20 BY .0008;
-  * Creation of Beta matrix based on varying Gender differences *;
-  BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));	
-  * Final Beta matrix with age groups added *;
-  BETA= BETARGD @ J(5,1,1) ;					
-  RUN POWER;
-  HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
-END;
-
-NAMES = _HOLDPOWERLBL || "DELTA";
-CREATE ONECL FROM HOLDALL [COLNAME = NAMES]; 
-APPEND FROM HOLDALL;
-CLOSE ONECL;
+RUN POWER;
 
 QUIT;
 
-*** Section that creates 3D plot ***;
+**********************************;
+* Section that creates the plotS *;
+**********************************;
 
-DATA TWO;
-N=100; DELTA=0; P_GG=0;		*Create 'dummy' entry for graph*;
-RUN;
+%MACRO GRAPH(DATA=, NAME=, TITLE2=);
 
-DATA THREE;	
-SET ONE TWO;
-KEEP N P_GG DELTA;
-RUN;
-
-* Delete any existing graphs *;
-
-PROC DATASETS LIBRARY=WORK MEMTYPE=CATALOG;
-DELETE GSEG ;
-RUN; QUIT;
-
-* Create 3D Power curves *;
-
-FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6A.png";
-TITLE1;
-
-%MACRO GRAPH(TILT,ROTATE);
-PROC G3D DATA = FOUR GOUT = FIVE;
-	PLOT DELTA*N = P_GG/
-		ZMIN=0 ZMAX=1.0 ZTICKNUM=6 YTICKNUM=5 XTICKNUM=5;
-	LABEL P_GG = "Power";
-RUN;
-%MEND;
-
-* Each PROC G3GRID call takes a few minutes to run *;
-PROC G3GRID DATA = THREE OUT = FOUR;
-GRID DELTA*N = P_GG/SPLINE NAXIS1=16 NAXIS2=11;
-
-GOPTIONS GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=7IN VSIZE=5IN HTEXT=16PT FTEXT=ZAPF; 
-
-%GRAPH(90,300);
-RUN;QUIT;RUN;
-
-
-%MACRO GRAPH(TILT,ROTATE);
-PROC G3D DATA = FOUR GOUT = FIVE;
-	PLOT DELTA*P_GG = N/
-		ZMIN=0 ZMAX=100 ZTICKNUM=6 YTICKNUM=5 XTICKNUM=6 SIDE;
-	LABEL P_GG = "Power";
-RUN;
-%MEND;
-
-* Each PROC G3GRID call takes a few minutes to run *;
-PROC G3GRID DATA = THREE OUT = FOUR;
-	GRID DELTA*P_GG = N/SPLINE NAXIS1=16 NAXIS2=11;
-	
-GOPTIONS GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=7IN VSIZE=5IN HTEXT=16PT FTEXT=ZAPF;  
-
-%GRAPH(90,300);
-RUN;QUIT;RUN;
-
-%MACRO GRAPH(TILT,ROTATE);
-PROC G3D DATA = FOUR GOUT = FIVE;
-	PLOT N*P_GG = DELTA/
-		ZMIN=0 ZMAX=0.2 ZTICKNUM=5 YTICKNUM=5 XTICKNUM=6 SIDE;
-	LABEL P_GG = "Power";
-RUN;
-%MEND;
-
-* Each PROC G3GRID call takes a few minutes to run *;
-PROC G3GRID DATA = THREE OUT = FOUR;
-	GRID N*P_GG = DELTA/SPLINE NAXIS1=16 NAXIS2=11;
-	
-GOPTIONS GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=7IN VSIZE=5IN HTEXT=16PT FTEXT=ZAPF;  
-
-%GRAPH(90,300);
-RUN;QUIT;RUN;
-
-PROC GREPLAY IGOUT=FIVE TC=TEMPCAT NOFS;
-TDEF TEMP2BY2 DES="2 rows, 2 columns (3 plots)"
- 1/LLX= 25 ULX= 25 LRX= 75 URX= 75   LLY=50 ULY=100 LRY=50 URY=100
- 2/LLX= 0 ULX= 0 LRX= 50 URX= 50   LLY=0 ULY=50 LRY=0 URY=50
- 3/LLX= 50 ULX= 50 LRX= 100 URX= 100   LLY=0 ULY=50 LRY=0 URY=50;
-TEMPLATE TEMP2BY2;
-TREPLAY 1:G3D  2:G3D1 3:G3D2;
-RUN;QUIT; RUN;
-
-
-*** Section that creates plot of values of gender*region differences that achieve 90% power ***;
-
-FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6B.png";
-
-* Extracts data with GG power >= 0.89 *;
-
-DATA SIX;
-SET THREE;
-IF N = 100 AND P_GG >= 0.89;
-KEEP N P_GG DELTA;
-RUN;
-
-* Creates dataset for Beta plot *;
-
-PROC IML SYMSIZE=2000 WORKSIZE=2000;
-
-USE SIX;
-READ ALL VAR {DELTA} INTO INDELTA;
-
-BETARG= J(2,4, 3.2) + {.30}#({ -1  0 1  0,
-                               -1  0 1  0});
-
-RESET PRINT;
-DELTA = INDELTA[1,1]; * Value of delta for which power is approx. 90% *;
-BETARGD=(BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0)))`;
-HOLD1= BETARGD[,1]//BETARGD[,2];
-HOLD2=((DO(1,4,1))`) // ((DO(1,4,1))`) ;
-HOLD3=J(4,1,1)//J(4,1,2);
-HOLD=HOLD1||HOLD2||HOLD3;
-HNAMES={"SOAM1" "IREGION" "GENDER"};
-CREATE SEVEN FROM HOLD [COLNAME = HNAMES];
-APPEND FROM HOLD;
-CLOSE SEVEN;
-QUIT;
-
-GOPTIONS GSFMODE=REPLACE GACCESS=SASGASTD GSFNAME=OUT01
-         CBACK=WHITE COLORS=(BLACK) DEVICE=PNG
-         HTITLE=.1666 IN HTEXT=.1666 IN HBY=.1666 IN
-         HPOS=80 VPOS=60 HSIZE=6.0 IN VSIZE=3.0 IN
-         FTEXT=TRIPLEX FTITLE=TRIPLEX FBY=TRIPLEX;
-         
-AXIS1 LABEL=("SOAM1") ORDER=(2.75 TO 3.75 BY 0.25)   MAJOR=(W=3) MINOR=NONE;
-AXIS2 LABEL=("Region of the Brain") MAJOR=(W=3) VALUE=("Ant" "LMid" "Post" "RMid");
-
-SYMBOL1 I=JOIN L=1 VALUE=e H=6 FONT=SPECIAL;
-SYMBOL2 I=JOIN L=2 VALUE=c H=6  FONT=SPECIAL;
+ODS GRAPHICS / IMAGENAME="&NAME";
+ODS LISTING GPATH="&ROOT.\Examples";
 
 TITLE1;
-PROC GPLOT DATA=SEVEN;
-  PLOT SOAM1*IREGION=GENDER / NOLEGEND NOFRAME VAXIS=AXIS1 HAXIS=AXIS2;
+PROC SGPLOT DATA=&DATA NOAUTOLEGEND;
+PBSPLINE Y=POWER_L X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=4);
+PBSPLINE Y=POWER X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=1);
+PBSPLINE Y=POWER_U X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=4);
+LABEL POWER_L="Power"  POWER  ="Power"  POWER_U="Power" 
+	BETASCAL="Mean Difference, 1/Cr (dL/mg)";
+YAXIS VALUES=(0 TO 1 BY .2) VALUEATTRS=(SIZE=12PT)
+	LABELATTRS=(SIZE=12PT);
+XAXIS VALUES=(0 TO .75 BY .25) VALUEATTRS=(SIZE=12PT)
+	LABELATTRS=(SIZE=12PT);
+REFLINE 0.5 / AXIS=X ;
 RUN;
-QUIT;
+
+%MEND;
 
 
-*** Section that creates overlay plot of power for three sample sizes ****;
-
-FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6C.png";
-
-PROC SORT DATA=ONE OUT=EIGHT;
-BY N DELTA;
-RUN;
-
-DATA NINE;
-MERGE EIGHT( WHERE=(N=20) RENAME=(P_GG=P20) )
-	EIGHT( WHERE=(N=40) RENAME=(P_GG=P40) )
-	EIGHT( WHERE=(N=80) RENAME=(P_GG=P80) );
-RUN;
-           
-* Power curves for N = 20,40,80 *;
-
-GOPTIONS GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=5IN VSIZE=3IN HTEXT=12PT FTEXT=TRIPLEX;
-
-SYMBOL1 I=SPLINE V=NONE L=1 W=2 R=3;
-
-AXIS1 ORDER=(0 TO 1.0 BY .20)    W=3 MINOR=NONE MAJOR=(W=2)
-      LABEL=(ANGLE=-90 ROTATE=90);
-AXIS2 LABEL=("Delta") ORDER=(0 TO .20 BY .05) W=3 MINOR=NONE MAJOR=(W=2);
-
-PROC GPLOT DATA=NINE;
-PLOT (P20 P40 P80)*DELTA/ OVERLAY NOFRAME
-       VZERO VAXIS=AXIS1 HZERO HAXIS=AXIS2 NOLEGEND;
-LABEL P20 ="Power" P40 ="Power" P80 ="Power";
-RUN; QUIT; 
-
-*** Section that creates plot with confidence limits for power for N=40***;
-
-FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6D.png";
-
-GOPTIONS RESET=ALL GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=5IN VSIZE=3IN HTEXT=12PT FTEXT=TRIPLEX;
-
-SYMBOL1 L=1 I=SPLINE V=NONE W=2;
-SYMBOL2 L=20 I=SPLINE V=NONE W=2 R=2;
-
-
-AXIS1 ORDER=(0 TO 1.0 BY .20)    W=3 MINOR=NONE MAJOR=(W=2)
-      LABEL=(ANGLE=-90 ROTATE=90);
-AXIS2 LABEL=("Delta") ORDER=(0 TO .20 BY .05) W=3 MINOR=NONE MAJOR=(W=2);
-
-PROC GPLOT DATA=ONECL;
-WHERE TOTAL_N=40;
-PLOT (POWER_GG POWER_GG_L POWER_GG_U )*DELTA/ OVERLAY NOFRAME
-       VZERO VAXIS=AXIS1 HZERO HAXIS=AXIS2 NOLEGEND;
-LABEL POWER_GG ="Power" 
-	  POWER_GG_L ="Power" 
-	  POWER_GG_U ="Power";
-RUN; QUIT;
-
-
+%GRAPH(DATA=PWRDT1, NAME=Example6A, TITLE2=Two-sided confidence limits);
+%GRAPH(DATA=PWRDT2, NAME=Example6B, TITLE2=One-sided lower confidence limits);
+%GRAPH(DATA=PWRDT3, NAME=Example6C, TITLE2=One-sided upper confidence limits);

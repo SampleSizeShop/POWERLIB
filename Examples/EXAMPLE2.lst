@@ -1,282 +1,105 @@
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                                                                                                
-                                                                                                
-WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is    
-given as one value with the heading POWER. To print powers with a heading for each test, specify
-OPT_OFF = {COLLAPSE}.                                                                           
-                                                                                                
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                               ****REQUESTED PRINTED MATRICES***                                
-                                                                                                
-                                                                                                
-                                            ESSENCEX                                            
-                                                                                                
-                                                   1                                            
-                                                                                                
-                                                                                                
-                                              BETA                                              
-                                                                                                
-                                              0         1                                       
-                                                                                                
-                                                                                                
-                                             SIGMA                                              
-                                                                                                
-                                              2         1                                       
-                                              1         2                                       
-                                                                                                
-                                                                                                
-                                              RHO                                               
-                                                                                                
-                                              1       0.5                                       
-                                            0.5         1                                       
-                                                                                                
-                                                                                                
-                                          C * BETA * U                                          
-                                                                                                
-                                                    -1                                          
-                                                                                                
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                                   ****POWER CALCULATIONS****                                   
-                                           HOLDPOWER                                            
-                            ALPHA   SIGSCAL  BETASCAL   TOTAL_N     POWER                       
-                                                                                                
-                             0.05         1         0        10      0.05                       
-                             0.05         1       0.5        10     0.171                       
-                             0.05         1         1        10     0.514                       
-                             0.05         1       1.5        10     0.846                       
-                             0.05         1         2        10     0.977                       
-                             0.05         1       2.5        10     0.999                       
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                                                                                                
-                                                                                                
-WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is    
-given as one value with the heading POWER. To print powers with a heading for each test, specify
-OPT_OFF = {COLLAPSE}.                                                                           
-                                                                                                
-                                                                                                
-                                                                                                
-WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT the
-standard deviation.                                                                             
-                                                                                                
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                               ****REQUESTED PRINTED MATRICES***                                
-                                                                                                
-                                                                                                
-                                            ESSENCEX                                            
-                                                                                                
-                                                   1                                            
-                                                                                                
-                                                                                                
-                                              BETA                                              
-                                                                                                
-                                                   1                                            
-                                                                                                
-                                                                                                
-                                             SIGMA                                              
-                                                                                                
-                                                   2                                            
-                                                                                                
-                                                                                                
-                                              RHO                                               
-                                                                                                
-                                                   1                                            
-                                                                                                
-                                                                                                
-                                          C * BETA * U                                          
-                                                                                                
-                                                     1                                          
-                                                                                                
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                            EXAMPLE2.SAS--Power for a paired t-test                             
-                                                                                                
-                                   ****POWER CALCULATIONS****                                   
-                                           HOLDPOWER                                            
-                            ALPHA   SIGSCAL  BETASCAL   TOTAL_N     POWER                       
-                                                                                                
-                             0.05         1         0        10      0.05                       
-                             0.05         1       0.5        10     0.171                       
-                             0.05         1         1        10     0.514                       
-                             0.05         1       1.5        10     0.846                       
-                             0.05         1         2        10     0.977                       
-                             0.05         1       2.5        10     0.999                       
+                           Example2.sas -- Power for a paired t-test
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test,
+specify OPT_OFF = {COLLAPSE}.
+
+                           Example2.sas -- Power for a paired t-test
+
+                               ****REQUESTED PRINTED MATRICES***
+
+
+                                            ESSENCEX
+
+                                                   1
+
+
+                                              BETA
+
+                                              0         1
+
+
+                                             SIGMA
+
+                                              2         1
+                                              1         2
+
+
+                                              RHO
+
+                                              1       0.5
+                                            0.5         1
+
+
+                                         C * BETA * U
+
+                                                   -1
+
+                           Example2.sas -- Power for a paired t-test
+
+                                  ****POWER CALCULATIONS****
+                                           HOLDPOWER
+                            ALPHA   SIGSCAL  BETASCAL   TOTAL_N     POWER
+
+                             0.05         1         0        10      0.05
+                             0.05         1       0.5        10     0.171
+                             0.05         1         1        10     0.514
+                             0.05         1       1.5        10     0.846
+                             0.05         1         2        10     0.977
+                             0.05         1       2.5        10     0.999
+                           Example2.sas -- Power for a paired t-test
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test,
+specify OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT
+the standard deviation.
+
+                           Example2.sas -- Power for a paired t-test
+
+                               ****REQUESTED PRINTED MATRICES***
+
+
+                                            ESSENCEX
+
+                                                   1
+
+
+                                              BETA
+
+                                                   1
+
+
+                                             SIGMA
+
+                                                   2
+
+
+                                              RHO
+
+                                                   1
+
+
+                                         C * BETA * U
+
+                                                    1
+
+                           Example2.sas -- Power for a paired t-test
+
+                                  ****POWER CALCULATIONS****
+                                           HOLDPOWER
+                            ALPHA   SIGSCAL  BETASCAL   TOTAL_N     POWER
+
+                             0.05         1         0        10      0.05
+                             0.05         1       0.5        10     0.171
+                             0.05         1         1        10     0.514
+                             0.05         1       1.5        10     0.846
+                             0.05         1         2        10     0.977
+                             0.05         1       2.5        10     0.999

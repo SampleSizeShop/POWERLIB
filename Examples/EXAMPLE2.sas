@@ -1,7 +1,8 @@
-TITLE1 "EXAMPLE2.SAS--Power for a paired t-test";
+OPTIONS NODATE NONUMBER PS=55 LS=95;
+TITLE1 "Example2.sas -- Power for a paired t-test";
 
 PROC IML SYMSIZE=2000;
-%INCLUDE "&ROOT.\Iml\POWERLIB21.IML"/NOSOURCE2;
+%INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
 
 ESSENCEX = I(1);
 SIGMA = {2 1, 1 2};
@@ -18,12 +19,13 @@ OPT_OFF= {C U};
 RUN POWER;
 QUIT;
 
-
-*** Section with difference scores ***;
-*** Is equivalent to the above ***;
+*******************************************;
+* Section with difference scores          *;
+* Provides output equivalent to the above *;
+*******************************************;
 
 PROC IML SYMSIZE=2000;
-%INCLUDE "&ROOT.\Iml\POWERLIB21.IML"/NOSOURCE2;
+%INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
 
 ESSENCEX = I(1);
 SIGMA = {2}; * Variance of Difference of Means *;

@@ -1,0 +1,95 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example10.sas -- Power for high dimension low sample size data";
+4
+5    *********************************************************;
+6    * From Chi YY, Gribbin MJ, Johnson JJ, Muller KE (2013) *;
+7    * Power calculation for overall hypothesis testing      *;
+8    * with high-dimensional commensurate outcomes           *;
+9    * Statistics in Medicine                                *;
+10   * Section 4: Study of Vitamin B6 Deficiency             *;
+11   *********************************************************;
+12
+13   LIBNAME IN01 "&ROOT.\Data\";
+NOTE: Libref IN01 was successfully assigned as follows:
+      Engine:        V9
+      Physical Name: C:\JLJ\Research\Projects In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Data
+14
+15   PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+16   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5427  RESET FUZZ SPACES=2;
+5428
+5429  USE IN01.EX10;
+5430  READ ALL VAR _NUM_ INTO SIGMA;
+5431
+5432  BETA=J(1,19,0.14);
+5433  N_EST=12;
+5434  RANK_EST=1;
+5435  SIGTYPE=1;
+5436  C=1;
+5437  REPN={10,15};
+5438  ESSENCEX={1};
+5439  U=I(19);
+5440
+5441  OPT_ON={ORTHU UNIFORCE CM};
+5442  OPT_OFF={ WARN GG UN BOX WLK HLT PBT SIGMA BETA ESSENCEX RHO U CBETAU C};
+5443
+5444  TITLE3 "Power when all amino acids exhibit mean difference = 0.14 log(umol/L)";
+5445  RUN POWER;
+5446
+5447  BETA=J(1,19,0);
+5448  BETA[1,17]=0.55;
+5449
+5450  TITLE3 "Power when mean difference in cystathionine = 0.55 log(umol/L)";
+5451  RUN POWER;
+5452
+5453  run;
+NOTE: Module MAIN is undefined in IML; cannot be RUN.
+5453!      quit;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.21 seconds
+      cpu time            0.21 seconds
+
+

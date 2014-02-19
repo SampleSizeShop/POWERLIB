@@ -1,4 +1,5 @@
-TITLE1 "EXAMPLE1.SAS--Power for two sample t-test with overlay plot";
+OPTIONS NODATE NONUMBER PS=55 LS=95;
+TITLE1 "Example1.sas -- Power for two sample t-test with overlay plot";
 
 ***************************************************************;
 * Perform power calculations for a two sample T test,          ;
@@ -10,16 +11,20 @@ TITLE1 "EXAMPLE1.SAS--Power for two sample t-test with overlay plot";
 * needed for plotting.                                         ;
 ***************************************************************;
 
-*** Section that computes power values ***;
-
+*************************************************;
 * Delete data set for power values if it exists *;
+*************************************************;
 
-PROC DATASETS LIBRARY=WORK;
+PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
 DELETE PWRDT1;
 RUN; QUIT;
 
+**************************************;
+* Section that computes power values *;
+**************************************;
+
 PROC IML SYMSIZE=1000 WORKSIZE=2000;
-%INCLUDE "&ROOT.\Iml\POWERLIB21.IML"/NOSOURCE2;
+%INCLUDE "&ROOT.\IML\POWERLIB22.IML" / NOSOURCE2;
 
 * Define inputs to power program *;
 
@@ -40,7 +45,9 @@ OPT_ON = {DS};
 
 RUN POWER;
 
-*** Section that creates plot ***;
+*********************************;
+* Section that creates the plot *;
+*********************************;
 
 PROC CONTENTS DATA=PWRDT1;
 RUN;
@@ -49,51 +56,31 @@ PROC SORT DATA=PWRDT1 OUT=ONE;
 BY BETASCAL SIGSCAL;
 RUN;
 
-* Create file for power curves of varying VARIANCE *;
-
+*Create file for power curves of varying VARIANCE;
 PROC TRANSPOSE DATA=ONE OUT=TWO PREFIX=SIGPWR;
 VAR POWER;
 BY BETASCAL;
 RUN;
 
-* Create ANNOTATE dataset and assign symbols for labeling plots *;
+ODS GRAPHICS / IMAGENAME="Example1" ;
+ODS LISTING GPATH="&ROOT.\Examples" ;
 
-DATA LABELS (KEEP= X Y XSYS YSYS TEXT STYLE SIZE);
-LENGTH   TEXT $ 5  STYLE $ 8;
-XSYS="2"; YSYS="2";
-X=.26;  Y=.95; TEXT="s";     STYLE="CGREEK"; *SIZE=1.0; OUTPUT;
-X=.31;  Y=.97; TEXT="2";     STYLE="TRIPLEX"; SIZE=.75; OUTPUT;
-X=.50;  Y=.95; TEXT="=0.32"; STYLE="TRIPLEX"; SIZE=1.0; OUTPUT;
-X=.76;  Y=.70; TEXT="s";     STYLE="CGREEK";  SIZE=1.0; OUTPUT;
-X=.81;  Y=.72; TEXT="2";     STYLE="TRIPLEX"; SIZE=.75; OUTPUT;
-X=1.00; Y=.70; TEXT="=1.00"; STYLE="TRIPLEX"; SIZE=1.0; OUTPUT;
-X=1.01; Y=.15; TEXT="s";     STYLE="CGREEK";  SIZE=1.0; OUTPUT;
-X=1.06; Y=.17; TEXT="2";     STYLE="TRIPLEX"; SIZE=.75; OUTPUT;
-X=1.25; Y=.15; TEXT="=2.05"; STYLE="TRIPLEX"; SIZE=1.0; OUTPUT;
-RUN;
-
-* The plot will be saved to this file for future inclusion in a document.*;
-FILENAME OUT01 "&ROOT.\Examples\EXAMPLE1.png";
-
-GOPTIONS GSFNAME=OUT01 DEVICE=PNG
-CBACK=WHITE COLORS=(BLACK) HORIGIN=0IN VORIGIN=0IN
-HSIZE=5IN VSIZE=3IN HTEXT=12PT FTEXT=TRIPLEX;
-
-SYMBOL1 I=JOIN V=NONE L=34 W=1.0;
-SYMBOL2 I=JOIN V=NONE L=1  W=1.0;
-SYMBOL3 I=JOIN V=NONE L=34 W=1.0;
-AXIS1 ORDER=(0 TO 1 BY .1)  W=1.5 MINOR=NONE MAJOR=(W=1.5) 
-      LABEL=(ANGLE=-90 ROTATE=90);
-AXIS2 ORDER=(0 TO 2.5 BY .5) W=1.5 MINOR=NONE MAJOR=(W=1.5); 
-
-* The plot overlays power curves for three different variances *;
 TITLE1;
-PROC GPLOT DATA=TWO;
-PLOT SIGPWR1*BETASCAL=1
-     SIGPWR2*BETASCAL=2
-     SIGPWR3*BETASCAL=3/OVERLAY VAXIS=AXIS1 HAXIS=AXIS2 ANNOTATE=LABELS;
-LABEL SIGPWR1="Power"  SIGPWR2="Power"  SIGPWR3="Power"
-      BETASCAL="Mean Difference";
+PROC SGPLOT DATA=TWO ;
+PBSPLINE Y=SIGPWR1 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=4) NOMARKERS
+							  NAME="PWR1" LEGENDLABEL="0.32";
+PBSPLINE Y=SIGPWR2 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=1) NOMARKERS
+							  NAME="PWR2" LEGENDLABEL="1";
+PBSPLINE Y=SIGPWR3 X=BETASCAL / LINEATTRS=(COLOR=BLACK PATTERN=8) NOMARKERS
+							  NAME="PWR3" LEGENDLABEL="2.05";
+LABEL SIGPWR1="Power" BETASCAL="Mean Difference" ;
+XAXIS VALUES=(0 TO 2.5 BY .5) VALUEATTRS=(SIZE=12PT)
+	LABELATTRS=(SIZE=12PT);
+YAXIS VALUES=(0 TO 1 BY 0.1) VALUEATTRS=(SIZE=12PT)
+	LABELATTRS=(SIZE=12PT);
+KEYLEGEND "PWR1" "PWR2" "PWR3"/ TITLE="Variance" VALUEATTRS=(SIZE=12PT) 
+	TITLEATTRS=(SIZE=12PT);
 RUN;
-QUIT;
+
+
 

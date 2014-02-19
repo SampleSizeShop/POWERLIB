@@ -1,0 +1,241 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example9.SAS-- Power within the context of an internal pilot design";
+4
+5    ***********************************************************************************;
+6    * From Coffey C.S. and Muller K.E. (2003)                                         *;
+7    * Properties of internal pilots with the univariate approach to repeated measures *;
+8    * Statistics in Medicine, 22(15)                                                  *;
+9    ***********************************************************************************;
+10
+11   ***************************************************;
+12   * Delete data sets for power values if they exist *;
+13   ***************************************************;
+14
+15   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+16   DELETE ONE TWO ONE_S TWO_S;
+17   RUN;
+
+NOTE: The file WORK.ONE (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.TWO (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.ONE_S (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.TWO_S (memtype=DATA) was not found, but appears on a DELETE statement.
+17 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.06 seconds
+      cpu time            0.07 seconds
+
+
+18
+19   **************************************;
+20   * Section that computes power values *;
+21   **************************************;
+22
+23   PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+24   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5435
+5436  ALPHA = .04;
+5437  OPT_ON = {NOPRINT GG HF BOX TOTAL_N  IP_PLAN};
+5438  OPT_OFF = {WARN ALPHA  BETASCAL  HLT PBT WLK };
+5439  ROUND = 2;
+5440
+5441  BETASCAL = 1;
+5442  THETA = {.25}#{.5 1 -1 .5};
+5442!                             * =Theta(cr) from 1st sentence *after*
+5443                              *  equation 7, Coffey and Muller (2003);
+5444
+5445  * Following from Table II in Coffey and Muller (2003) *;
+5446  VARSTARE = {.47960 .01000 .01000 .01000};
+5446!                                           * epsilon ~ .28 *;
+5447  VARSTARF = {.34555 .06123 .05561 .04721};
+5447!                                           * epsilon ~ .50 *;
+5448  VARSTARG = {.23555 .17123 .05561 .04721};
+5448!                                           * epsilon ~ .72 *;
+5449  VARSTARH = {.12740 .12740 .12740 .12740};
+5449!                                           * epsilon = 1 *;
+5450  VARSTAR = VARSTARE//VARSTARF//VARSTARG//VARSTARH;
+5451
+5452  SIGSCAL = {0.50 1.00 2.00};
+5452!                             * <=> gamma in Coffey and Muller (2003) *;
+5453
+5454  * Log base 2 spacing Clip (2,4,16) and Region(2,8,32) *;
+5455  * Get orthonormal U matrices *;
+5456  RUN UPOLY2({1 2 4},"A", {1 3 5},"B",
+5457              UA,NMA, UB,NMB, UAB,NMAB);
+5458  U = UAB;
+5459  C = 1;
+5460
+5461  ESSENCEX = {1};
+5462  REPN = {20};
+5463
+5464  *************************************;
+5465  * Compute power for a non-IP design *;
+5466  *************************************;
+5467
+5468  IP_PLAN=0;
+5468!            *Default, but specified for clarity;
+5469
+5470  DO IVAR = 1 TO 4 BY 1;
+5471      SIGSTAR = DIAG(VARSTAR[IVAR,*]);
+5472
+5473      SIGMA = U*SIGSTAR*U`;
+5473!                            * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+5474      BETA = THETA*U`;
+5474!                            * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+5475
+5476      RUN POWER;
+5477
+5478      HOLDALL = HOLDALL//_HOLDPOWER;
+5479      END;
+5480
+5481  CREATE ONE VAR _HOLDPOWERLBL;
+5482  APPEND FROM HOLDALL;
+5483  FREE HOLDALL;
+5484
+5485  *************************************;
+5486  * Compute power within an IP design *;
+5487  *************************************;
+5488
+5489  IP_PLAN=1;
+5490  N_IP=10;
+5491  RANK_IP=1;
+5492
+5493  DO IVAR = 1 TO 4 BY 1;
+5494      SIGSTAR = DIAG(VARSTAR[IVAR,*]);
+5495
+5496      SIGMA = U*SIGSTAR*U`;
+5496!                            * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+5497      BETA = THETA*U`;
+5497!                            * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+5498
+5499      RUN POWER;
+5500
+5501      HOLDALL = HOLDALL//_HOLDPOWER;
+5502      END;
+5503
+5504  CREATE TWO VAR _HOLDPOWERLBL;
+5505  APPEND FROM HOLDALL;
+5506
+5507
+5508  QUIT;
+NOTE: Exiting IML.
+NOTE: The data set WORK.ONE has 12 observations and 10 variables.
+NOTE: The data set WORK.TWO has 12 observations and 10 variables.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.17 seconds
+      cpu time            0.17 seconds
+
+
+5509
+5510  *****************;
+5511  * Print results *;
+5512  *****************;
+5513
+5514  %MACRO PRINT(DATA=);
+5515
+5516  PROC SORT DATA=&DATA OUT=&DATA._S;
+5517  BY SIGSCAL EPSILON;
+5518  RUN;
+5519
+5520  PROC PRINT DATA=&DATA._S UNIFORM NOOBS;
+5521  BY TOTAL_N;
+5522  TITLE4 "All data in file";
+5523  RUN;
+5524
+5525  PROC PRINT DATA=&DATA._S(RENAME=(SIGSCAL=GAMMA)) UNIFORM NOOBS;
+5526  VAR EPSILON GAMMA  POWER_GG POWER_HF ;
+5527  BY  TOTAL_N;
+5528  TITLE4 "Table III, Coffey and Muller (2003)";
+5529  RUN;
+5530
+5531  %MEND;
+5532
+5533  TITLE3 "Power computed for a non-IP design";
+5534  %PRINT(DATA=ONE);
+
+NOTE: There were 12 observations read from the data set WORK.ONE.
+NOTE: The data set WORK.ONE_S has 12 observations and 10 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+
+
+NOTE: There were 12 observations read from the data set WORK.ONE_S.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+
+NOTE: There were 12 observations read from the data set WORK.ONE_S.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+
+
+5535
+5536  TITLE3 "Power computed for an IP design";
+5537  %PRINT(DATA=TWO);
+
+NOTE: There were 12 observations read from the data set WORK.TWO.
+NOTE: The data set WORK.TWO_S has 12 observations and 10 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+
+
+NOTE: There were 12 observations read from the data set WORK.TWO_S.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+
+NOTE: There were 12 observations read from the data set WORK.TWO_S.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+

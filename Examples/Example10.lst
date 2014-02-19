@@ -1,0 +1,20 @@
+                Example10.sas -- Power for high dimension low sample size data
+
+             Power when all amino acids exhibit mean difference = 0.14 log(umol/L)
+
+                                  ****POWER CALCULATIONS****
+                                           HOLDPOWER
+          ALPHA    SIGSCAL   BETASCAL    TOTAL_N    SIGTYPE    EPSILON   EXEPS_CM   POWER_CM
+
+           0.05          1          1         10          1      0.229      0.199      0.834
+           0.05          1          1         15          1      0.229      0.216       0.96
+                Example10.sas -- Power for high dimension low sample size data
+
+                Power when mean difference in cystathionine = 0.55 log(umol/L)
+
+                                  ****POWER CALCULATIONS****
+                                           HOLDPOWER
+          ALPHA    SIGSCAL   BETASCAL    TOTAL_N    SIGTYPE    EPSILON   EXEPS_CM   POWER_CM
+
+           0.05          1          1         10          1      0.229      0.199      0.856
+           0.05          1          1         15          1      0.229      0.216      0.984

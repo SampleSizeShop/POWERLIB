@@ -1,0 +1,202 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example6.sas -- Confidence limits for a univariate model test";
+4
+5    ******************************************************************************;
+6    * Creates Figure 1 in Taylor and Muller, 1995, Amer Statistician, 49, p43-47 *;
+7    ******************************************************************************;
+8
+9    ****************************************************;
+10   * Delete data sets for power values if they exists *;
+11   ****************************************************;
+12
+13   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+14   DELETE PWRDT1 PWRDT2 PWRDT3;
+15   RUN;
+
+NOTE: The file WORK.PWRDT1 (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.PWRDT2 (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.PWRDT3 (memtype=DATA) was not found, but appears on a DELETE statement.
+15 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.07 seconds
+      cpu time            0.07 seconds
+
+
+16
+17   **************************************;
+18   * Section that computes power values *;
+19   **************************************;
+20
+21   PROC IML WORKSIZE=1000 SYMSIZE=2000;
+NOTE: Worksize    = 1024000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+22   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5433
+5434  OPT_OFF = {ALPHA};
+5435  OPT_ON  = {NOPRINT DS};
+5436
+5437  ESSENCEX = I(2);
+5437!                   *Balanced two group t test, cell mean coding;
+5438  REPN = {12};
+5439
+5440  BETA = {0 1}`;
+5441  BETASCAL = DO(0,.75,.01);
+5442
+5443  ALPHA={.01};
+5444  C    ={1 -1};
+5445
+5446  SIGMA  = {.068};
+5447  SIGSCAL = {1}   ;
+5448
+5449  * Statements to create two-sided confidence limits *;
+5450
+5451  CLTYPE = 1;
+5452  N_EST = 24;
+5452!                    *# Obs for variance estimate;
+5453  RANK_EST = 2;
+5453!                    *# model df for study giving variance estimate;
+5454  ALPHA_CL = .025;
+5454!                    *Lower confidence limit tail size;
+5455  ALPHA_CU = .025;
+5455!                    *Upper confidence limit tail size;
+5456  *Since no dataset name was specified, WORK.PWRDT1 is created.;
+5457
+5458  RUN POWER;
+NOTE: No data sets in the library WORK.
+NOTE: The data set WORK._PWRDTMP has 76 observations and 10 variables.
+5459
+5460  * Statements to create one-sided lower confidence limits *;
+5461
+5462  CLTYPE = 1;
+5463  N_EST = 24;
+5463!                    *# Obs for variance estimate;
+5464  RANK_EST = 2;
+5464!                    *# model df for study giving variance estimate;
+5465  *Above three statements could have been omitted here since they duplicate
+5466  those for two sided confidence limits*;
+5467
+5468  ALPHA_CL = 0.05;
+5468!                    *Lower confidence limit tail size;
+5469  ALPHA_CU =   0;
+5469!                    *Upper confidence limit tail size;
+5470  *Since WORK.PWRDT1 already exists, WORK.PWRDT2 is created.;
+5471
+5472  RUN POWER;
+NOTE: The data set WORK._PWRDTMP has 76 observations and 10 variables.
+5473
+5474  * Statements to create one-sided upper confidence limits *;
+5475
+5476  ALPHA_CL = 0;
+5476!                    *Lower confidence limit tail size;
+5477  ALPHA_CU = 0.05;
+5477!                    *Upper confidence limit tail size;
+5478  *Since WORK.PWRDT1 and WORK.PWDT2 already exist, WORK.PWRDT3 is created.;
+5479
+5480  RUN POWER;
+NOTE: The data set WORK._PWRDTMP has 76 observations and 10 variables.
+5481
+5482  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.29 seconds
+      cpu time            0.26 seconds
+
+
+5483
+5484  **********************************;
+5485  * Section that creates the plotS *;
+5486  **********************************;
+5487
+5488  %MACRO GRAPH(DATA=, NAME=, TITLE2=);
+5489
+5490  ODS GRAPHICS / IMAGENAME="&NAME";
+5491  ODS LISTING GPATH="&ROOT.\Examples";
+5492
+5493  TITLE1;
+5494  PROC SGPLOT DATA=&DATA NOAUTOLEGEND;
+5495  PBSPLINE Y=POWER_L X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=4);
+5496  PBSPLINE Y=POWER X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=1);
+5497  PBSPLINE Y=POWER_U X=BETASCAL / NOMARKERS LINEATTRS=(COLOR=BLACK PATTERN=4);
+5498  LABEL POWER_L="Power"  POWER  ="Power"  POWER_U="Power"
+5499      BETASCAL="Mean Difference, 1/Cr (dL/mg)";
+5500  YAXIS VALUES=(0 TO 1 BY .2) VALUEATTRS=(SIZE=12PT)
+5501      LABELATTRS=(SIZE=12PT);
+5502  XAXIS VALUES=(0 TO .75 BY .25) VALUEATTRS=(SIZE=12PT)
+5503      LABELATTRS=(SIZE=12PT);
+5504  REFLINE 0.5 / AXIS=X ;
+5505  RUN;
+5506
+5507  %MEND;
+5508
+5509
+5510  %GRAPH(DATA=PWRDT1, NAME=Example6A, TITLE2=Two-sided confidence limits);
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.48 seconds
+      cpu time            0.17 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects In Progress\POWERLIB\Version
+      2.2\Examples\For Submission\Examples\Example6A.png.
+NOTE: There were 76 observations read from the data set WORK.PWRDT1.
+
+5511  %GRAPH(DATA=PWRDT2, NAME=Example6B, TITLE2=One-sided lower confidence limits);
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.29 seconds
+      cpu time            0.12 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects In Progress\POWERLIB\Version
+      2.2\Examples\For Submission\Examples\Example6B.png.
+NOTE: There were 76 observations read from the data set WORK.PWRDT2.
+
+5512  %GRAPH(DATA=PWRDT3, NAME=Example6C, TITLE2=One-sided upper confidence limits);
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.29 seconds
+      cpu time            0.10 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects In Progress\POWERLIB\Version
+      2.2\Examples\For Submission\Examples\Example6C.png.
+NOTE: There were 76 observations read from the data set WORK.PWRDT3.
+
+

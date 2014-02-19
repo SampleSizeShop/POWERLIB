@@ -1,14 +1,30 @@
-TITLE1 "EXAMPLE9.SAS-- Test in multivariate model with two within factors";
-TITLE2 "From Coffey C.S. and Muller K.E. (2003) Properties of ";
-TITLE3 "internal pilots with the univariate approach to repeated measures";
-TITLE4 "Statistics in Medicine, 22(15)";
+OPTIONS NODATE NONUMBER PS=55 LS=95;
+TITLE1 "Example9.SAS-- Power within the context of an internal pilot design";
+
+***********************************************************************************;
+* From Coffey C.S. and Muller K.E. (2003)                                         *;
+* Properties of internal pilots with the univariate approach to repeated measures *;
+* Statistics in Medicine, 22(15)                                                  *;
+***********************************************************************************;
+
+***************************************************;
+* Delete data sets for power values if they exist *;
+***************************************************;
+
+PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+DELETE ONE TWO ONE_S TWO_S;
+RUN; QUIT;
+
+**************************************;
+* Section that computes power values *;
+**************************************;
 
 PROC IML SYMSIZE=1000 WORKSIZE=2000;
-%INCLUDE "&ROOT.\Iml\POWERLIB21.IML"/NOSOURCE2;
+%INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
 
 ALPHA = .04;
-OPT_ON = {NOPRINT  GG HF BOX TOTAL_N  UCDF UMETHOD};
-OPT_OFF = {WARN  ALPHA  BETASCAL  HLT PBT WLK };
+OPT_ON = {NOPRINT GG HF BOX TOTAL_N  IP_PLAN};
+OPT_OFF = {WARN ALPHA  BETASCAL  HLT PBT WLK };
 ROUND = 2;
 
 BETASCAL = 1;
@@ -34,38 +50,77 @@ C = 1;
 ESSENCEX = {1};
 REPN = {20};
 
-  DO IVAR = 1 TO 4 BY 1;
-  SIGSTAR = DIAG(VARSTAR[IVAR,*]);
- 
-  SIGMA = U*SIGSTAR*U`;  * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
-  BETA = THETA*U`;       * 1st paragraph in section 2.4, Coffey and Muller 2003 *; 
+*************************************;
+* Compute power for a non-IP design *;
+*************************************;
 
-    DO VERSION = 1 TO 2 BY 1;  *POWERLIB version;
-    UCDF = J(4,1,VERSION);
-    UMETHOD = J(2,1,VERSION);
-    RUN POWER;
-    HOLDALL = HOLDALL//_HOLDPOWER;
+IP_PLAN=0; *Default, but specified for clarity;
+
+DO IVAR = 1 TO 4 BY 1;
+	SIGSTAR = DIAG(VARSTAR[IVAR,*]);
+ 
+	SIGMA = U*SIGSTAR*U`;  * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+	BETA = THETA*U`;       * 1st paragraph in section 2.4, Coffey and Muller 2003 *; 
+
+	RUN POWER;
+
+	HOLDALL = HOLDALL//_HOLDPOWER;
     END;
-  END;
 
 CREATE ONE VAR _HOLDPOWERLBL;
 APPEND FROM HOLDALL;
+FREE HOLDALL;
+
+*************************************;
+* Compute power within an IP design *;
+*************************************;
+
+IP_PLAN=1;
+N_IP=10;
+RANK_IP=1;
+
+DO IVAR = 1 TO 4 BY 1;
+	SIGSTAR = DIAG(VARSTAR[IVAR,*]);
+ 
+	SIGMA = U*SIGSTAR*U`;  * 1st paragraph in section 2.4, Coffey and Muller 2003 *;
+	BETA = THETA*U`;       * 1st paragraph in section 2.4, Coffey and Muller 2003 *; 
+
+	RUN POWER;
+
+	HOLDALL = HOLDALL//_HOLDPOWER;
+    END;
+
+CREATE TWO VAR _HOLDPOWERLBL;
+APPEND FROM HOLDALL;
+
 
 QUIT;
 
-PROC SORT DATA=ONE OUT=TWO;
-BY UCDF_GG UMETHOD_GG SIGSCAL EPSILON;
+*****************;
+* Print results *;
+*****************;
+
+%MACRO PRINT(DATA=);
+
+PROC SORT DATA=&DATA OUT=&DATA._S;
+BY SIGSCAL EPSILON;
 RUN;
 
-PROC PRINT DATA=TWO UNIFORM NOOBS;
-BY UCDF_GG UMETHOD_GG  UCDF_HF UMETHOD_HF UCDF_BOX TOTAL_N;
-PAGEBY UCDF_GG;
-TITLE5 "All data in file";
+PROC PRINT DATA=&DATA._S UNIFORM NOOBS;
+BY TOTAL_N;
+TITLE4 "All data in file";
 RUN;
 
-PROC PRINT DATA=TWO(RENAME=(SIGSCAL=GAMMA)) UNIFORM NOOBS;
+PROC PRINT DATA=&DATA._S(RENAME=(SIGSCAL=GAMMA)) UNIFORM NOOBS;
 VAR EPSILON GAMMA  POWER_GG POWER_HF ; 
-BY UCDF_GG UMETHOD_GG  UCDF_HF UMETHOD_HF UCDF_BOX TOTAL_N;
-PAGEBY UCDF_GG;
-TITLE5 "Version 2 far more accurate for Table III, Coffey and Muller (2003)";
+BY  TOTAL_N;
+TITLE4 "Table III, Coffey and Muller (2003)";
 RUN;
+
+%MEND;
+
+TITLE3 "Power computed for a non-IP design";
+%PRINT(DATA=ONE);
+
+TITLE3 "Power computed for an IP design";
+%PRINT(DATA=TWO);

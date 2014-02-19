@@ -1,140 +1,63 @@
-      EXAMPLE6.SAS--Confidence limits for a UNIREP test in a multivariate model with plots      
-                                                                                                
-                                             SIGMA                                              
-                                ANT        LEFT        POST       RIGHT                         
-                                                                                                
-                            0.08380     0.05020     0.03560     0.05330                         
-                            0.05020     0.05370     0.03250     0.03330                         
-                            0.03560     0.03250     0.04410     0.03860                         
-                            0.05330     0.03330     0.03860     0.07220                         
-                                                                                                
-                                                                                                
-                                             BETARG                                             
-                                  ANT      LEFT      POST     RIGHT                             
-                                                                                                
-                                  2.9       3.2       3.5       3.2                             
-                                  2.9       3.2       3.5       3.2                             
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-                           DELTA      1 row       1 col     (numeric)                           
-                                                                                                
-                                                                                                
-                                                                                                
-                                                0.08                                            
-                                                                                                
-                                                                                                
-                                                                                                
-                          BETARGD      4 rows      2 cols    (numeric)                          
-                                                                                                
-                                                                                                
-                                                                                                
-                                            2.9       2.9                                       
-                                            3.2       3.2                                       
-                                           3.58      3.42                                       
-                                            3.2       3.2                                       
-                                                                                                
-                                                                                                
-                                                                                                
-                           HOLD1      8 rows      1 col     (numeric)                           
-                                                                                                
-                                                                                                
-                                                                                                
-                                                 2.9                                            
-                                                 3.2                                            
-                                                3.58                                            
-                                                 3.2                                            
-                                                 2.9                                            
-                                                 3.2                                            
-                                                3.42                                            
-                                                 3.2                                            
-                                                                                                
-                                                                                                
-                                                                                                
-                           HOLD2      8 rows      1 col     (numeric)                           
-                                                                                                
-                                                                                                
-                                                                                                
-                                                   1                                            
-                                                   2                                            
-                                                   3                                            
-                                                   4                                            
-                                                   1                                            
-                                                   2                                            
-                                                   3                                            
-                                                   4                                            
-                                                                                                
-                                                                                                
-                                                                                                
-                           HOLD3      8 rows      1 col     (numeric)                           
-                                                                                                
- 
- 
- 
-                                                   1                                            
-                                                   1                                            
-                                                   1                                            
-                                                   1                                            
-                                                   2                                            
-                                                   2                                            
-                                                   2                                            
-                                                   2                                            
-                                                                                                
-                                                                                                
-                                                                                                
-                           HOLD      8 rows      3 cols    (numeric)                            
-                                                                                                
-                                                                                                
-                                                                                                
-                                       2.9         1         1                                  
-                                       3.2         2         1                                  
-                                      3.58         3         1                                  
-                                       3.2         4         1                                  
-                                       2.9         1         2                                  
-                                       3.2         2         2                                  
-                                      3.42         3         2                                  
-                                       3.2         4         2                                  
-                                                                                                
-                                                                                                
-                                                                                                
-                     HNAMES      1 row       3 cols    (character, size 7)                      
-                                                                                                
-                                                                                                
-                                                                                                
-                                    SOAM1   IREGION GENDER                                      
-                                                                                                
+                 Example6.sas -- Confidence limits for a univariate model test
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test,
+specify OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT
+the standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 31 time(s).
+
+
+                     The results have been stored in SAS file WORK.PWRDT1
+                 Example6.sas -- Confidence limits for a univariate model test
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test,
+specify OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT
+the standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 8 time(s).
+
+
+                     The results have been stored in SAS file WORK.PWRDT2
+                 Example6.sas -- Confidence limits for a univariate model test
+
+
+
+WARNING 2: B = 1, so that all tests coincide (univariate case). Since COLLAPSE = 1, power is
+given as one value with the heading POWER. To print powers with a heading for each test,
+specify OPT_OFF = {COLLAPSE}.
+
+
+
+WARNING 10: SIGMA is a scalar. For this program, a scalar SIGMA must equal the variance, NOT
+the standard deviation.
+
+
+
+POWER CALCULATION WARNING 22: Power values were rounded to 1 using the value contained in ROUND
+and should not be be reported as Power = 1. For example, if ROUND = 3 then report Power > 0.999
+. This occurred 29 time(s).
+
+
+                     The results have been stored in SAS file WORK.PWRDT3

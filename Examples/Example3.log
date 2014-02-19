@@ -1,0 +1,131 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    GOPTIONS RESET=ALL;
+4    TITLE1 "Example3.sas -- Power for a t-test with 3 dimensional plot";
+5
+6    *************************************************;
+7    * Delete data set for power values if it exists *;
+8    *************************************************;
+9
+10   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+11   DELETE PWRDT1;
+12   RUN;
+
+NOTE: The file WORK.PWRDT1 (memtype=DATA) was not found, but appears on a DELETE statement.
+12 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.07 seconds
+      cpu time            0.07 seconds
+
+
+13
+14   **************************************;
+15   * Section that computes power values *;
+16   **************************************;
+17
+18   PROC IML WORKSIZE=1000 SYMSIZE=2000;
+NOTE: Worksize    = 1024000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+19   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5430
+5431  OPT_OFF = {WARN ALPHA};
+5432  OPT_ON = {NOPRINT DS};
+5433  * Output not printed to screen since NOPRINT option ON *;
+5434
+5435  ROUND = 6;
+5436  ALPHA = {.01};
+5437  SIGMA = {.068};
+5438  SIGSCAL = {1} ;
+5439  BETA = {0 1}`;
+5440  C = {-1 1};
+5441  ESSENCEX = I(2);
+5442  REPN = DO(3,18,3);
+5443  BETASCAL = DO(0,.75,.05);
+5444  RUN POWER;
+NOTE: No data sets in the library WORK.
+NOTE: The data set WORK._PWRDTMP has 96 observations and 4 variables.
+5445
+5446  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.20 seconds
+      cpu time            0.20 seconds
+
+
+5447
+5448  *********************************;
+5449  * Section that creates the plot *;
+5450  *********************************;
+5451
+5452  FILENAME OUT01 "&ROOT.\Examples\Example3.png";
+5453
+5454  TITLE1;
+5455  PROC G3GRID DATA=PWRDT1 OUT=ONE;
+5456  GRID  BETASCAL*TOTAL_N=POWER /SPLINE NAXIS1=16 NAXIS2=11 ;
+5457  GOPTIONS GSFNAME=OUT01 DEVICE=PNG  CBACK=WHITE COLORS=(BLACK)
+5458      HSIZE=6.67IN VSIZE=5IN HTEXT=12PT;
+5459  RUN;
+
+NOTE: There were 96 observations read from the data set WORK.PWRDT1.
+NOTE: The data set WORK.ONE has 176 observations and 3 variables.
+NOTE: PROCEDURE G3GRID used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5460
+5461  PROC G3D DATA=ONE GOUT=OUT01;
+5462  PLOT BETASCAL*TOTAL_N=POWER/
+5463       ZMIN=0 ZMAX=1 ZTICKNUM=6   YTICKNUM=4    XTICKNUM=6   SIDE;
+5464  LABEL TOTAL_N ="N" BETASCAL="Delta" POWER="Power" ;
+5465  RUN;
+
+WARNING: Some data values are not in the range of ZMIN= and
+         ZMAX=, and are clipped.
+NOTE: 9 records written to C:\JLJ\Research\Projects In
+      Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\Example3.png.
+NOTE: PROCEDURE G3D used (Total process time):
+      real time           0.81 seconds
+      cpu time            0.32 seconds
+
+

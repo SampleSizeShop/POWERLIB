@@ -1,0 +1,97 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example4.sas -- Power for a test of the interaction" ;
+4    TITLE2 "of between and within factors in a multivariate model";
+5    TITLE3 "Compares power of tests when SIGMA most favorable to UN";
+6
+7    PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+8    %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5419
+5420  OPT_OFF={ALPHA};
+5421  OPT_ON = {ORTHU UN HF GG BOX HLT PBT WLK MMETHOD UMETHOD MMETHOD};
+5422  * Specifying the option ORTHU in OPT_ON allows the program to provide;
+5423  * an orthonormal U matrix if one is not given by the user;
+5424  * This is the case for the following code;
+5425
+5426  * Create contrast matrices C and U (non-orthonormal) *;
+5427  P = 3;
+5428  Q = 4;
+5429  C = J(Q-1,1,1)||(-I(Q-1));
+5430  U = ( J(P-1,1,1)||(-I(P-1)) )`;
+5431
+5432  ALPHA = .01;
+5433
+5434  VARIANCE = 1;
+5435  RHO = 0.4;
+5436  SIGMA = VARIANCE#(I(P)#(1-RHO) + J(P,P,RHO));
+5436!                                               *Compound symmetry;
+5437  SIGSCAL = {1, 2};
+5438
+5439  ESSENCEX = I(Q);
+5440  REPN = {5,10};
+5441  BETA = J(Q,P,0);
+5442  BETA[1,1] = 1;
+5443  BETASCAL = DO(0, 2.0 , 0.50);
+5444
+5445  MMETHOD = {4,4,4};
+5445!                    * Two moment null approximations + OBrien and Shieh (1992)
+5446                       noncentrality multiplier ON;
+5447
+5448  UCDF = {4,2,2,2,4};
+5448!                      * UN and Box (4):
+5449                       Exact via Davies' algorithm (1980), as in Muller,
+5450                       Edwards, Simpson, and Taylor (2007). If exact fails,
+5451                       then switch to approximation 2, MEST (2007);
+5452                     * HF, CM, GG (2):
+5453                       Muller, Edwards, Simpson, and Taylor (2007)
+5454                       approximation;
+5455
+5456  RUN POWER;
+5457
+5458  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.40 seconds
+      cpu time            0.32 seconds
+
+

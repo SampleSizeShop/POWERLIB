@@ -1,184 +1,86 @@
-       EXAMPLE9.SAS-- Test in multivariate model with two within factors        
-             From Coffey C.S. and Muller K.E. (2003) Properties of              
-       internal pilots with the univariate approach to repeated measures        
-                         Statistics in Medicine, 22(15)                         
-                                All data in file                                
-                                                                                
------ UCDF_GG=1 UMETHOD_GG=1 UCDF_HF=1 UMETHOD_HF=1 UCDF_BOX=1 TOTAL_N=20 ------
-                                                                                
-                                                                EXEPS_   POWER_ 
-SIGSCAL   EPSILON   EXEPS_HF   POWER_HF   EXEPS_GG   POWER_GG     BOX      BOX  
-                                                                                
-  0.5       0.28      0.29       0.92       0.28       0.92      0.25     0.91  
-  0.5       0.51      0.56       0.99       0.50       0.99      0.25     0.97  
-  0.5       0.72      0.73       1.00       0.63       1.00      0.25     0.99  
-  0.5       1.00      1.17       1.00       0.92       1.00      0.25     1.00  
-  1.0       0.28      0.29       0.66       0.28       0.65      0.25     0.63  
-  1.0       0.51      0.56       0.86       0.50       0.84      0.25     0.70  
-  1.0       0.72      0.73       0.93       0.63       0.92      0.25     0.75  
-  1.0       1.00      1.17       0.98       0.92       0.97      0.25     0.80  
-  2.0       0.28      0.29       0.37       0.28       0.37      0.25     0.35  
-  2.0       0.51      0.56       0.55       0.50       0.52      0.25     0.34  
-  2.0       0.72      0.73       0.64       0.63       0.61      0.25     0.33  
-  2.0       1.00      1.17       0.75       0.92       0.74      0.25     0.32  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-       EXAMPLE9.SAS-- Test in multivariate model with two within factors        
-             From Coffey C.S. and Muller K.E. (2003) Properties of              
-       internal pilots with the univariate approach to repeated measures        
-                         Statistics in Medicine, 22(15)                         
-                                All data in file                                
-                                                                                
------ UCDF_GG=2 UMETHOD_GG=2 UCDF_HF=2 UMETHOD_HF=2 UCDF_BOX=2 TOTAL_N=20 ------
-                                                                                
-                                                                EXEPS_   POWER_ 
-SIGSCAL   EPSILON   EXEPS_HF   POWER_HF   EXEPS_GG   POWER_GG     BOX      BOX  
-                                                                                
-  0.5       0.28      0.28       1.00       0.28       1.00      0.25     1.00  
-  0.5       0.51      0.51       1.00       0.46       1.00      0.25     1.00  
-  0.5       0.72      0.72       1.00       0.62       1.00      0.25     1.00  
-  0.5       1.00      1.00       1.00       0.81       1.00      0.25     1.00  
-  1.0       0.28      0.28       0.85       0.28       0.84      0.25     0.81  
-  1.0       0.51      0.51       0.95       0.46       0.94      0.25     0.82  
-  1.0       0.72      0.72       0.96       0.62       0.95      0.25     0.80  
-  1.0       1.00      1.00       0.98       0.81       0.97      0.25     0.80  
-  2.0       0.28      0.28       0.39       0.28       0.39      0.25     0.35  
-  2.0       0.51      0.51       0.59       0.46       0.56      0.25     0.33  
-  2.0       0.72      0.72       0.68       0.62       0.64      0.25     0.32  
-  2.0       1.00      1.00       0.75       0.81       0.71      0.25     0.32  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-       EXAMPLE9.SAS-- Test in multivariate model with two within factors        
-             From Coffey C.S. and Muller K.E. (2003) Properties of              
-       internal pilots with the univariate approach to repeated measures        
-                         Statistics in Medicine, 22(15)                         
-      Version 2 far more accurate for Table III, Coffey and Muller (2003)       
-                                                                                
------ UCDF_GG=1 UMETHOD_GG=1 UCDF_HF=1 UMETHOD_HF=1 UCDF_BOX=1 TOTAL_N=20 ------
-                                                                                
-                    EPSILON    GAMMA    POWER_GG    POWER_HF                    
-                                                                                
-                      0.28      0.5       0.92        0.92                      
-                      0.51      0.5       0.99        0.99                      
-                      0.72      0.5       1.00        1.00                      
-                      1.00      0.5       1.00        1.00                      
-                      0.28      1.0       0.65        0.66                      
-                      0.51      1.0       0.84        0.86                      
-                      0.72      1.0       0.92        0.93                      
-                      1.00      1.0       0.97        0.98                      
-                      0.28      2.0       0.37        0.37                      
-                      0.51      2.0       0.52        0.55                      
-                      0.72      2.0       0.61        0.64                      
-                      1.00      2.0       0.74        0.75                      
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-       EXAMPLE9.SAS-- Test in multivariate model with two within factors        
-             From Coffey C.S. and Muller K.E. (2003) Properties of              
-       internal pilots with the univariate approach to repeated measures        
-                         Statistics in Medicine, 22(15)                         
-      Version 2 far more accurate for Table III, Coffey and Muller (2003)       
-                                                                                
------ UCDF_GG=2 UMETHOD_GG=2 UCDF_HF=2 UMETHOD_HF=2 UCDF_BOX=2 TOTAL_N=20 ------
-                                                                                
-                    EPSILON    GAMMA    POWER_GG    POWER_HF                    
-                                                                                
-                      0.28      0.5       1.00        1.00                      
-                      0.51      0.5       1.00        1.00                      
-                      0.72      0.5       1.00        1.00                      
-                      1.00      0.5       1.00        1.00                      
-                      0.28      1.0       0.84        0.85                      
-                      0.51      1.0       0.94        0.95                      
-                      0.72      1.0       0.95        0.96                      
-                      1.00      1.0       0.97        0.98                      
-                      0.28      2.0       0.39        0.39                      
-                      0.51      2.0       0.56        0.59                      
-                      0.72      2.0       0.64        0.68                      
-                      1.00      2.0       0.71        0.75                      
+              Example9.SAS-- Power within the context of an internal pilot design
+
+                              Power computed for a non-IP design
+                                       All data in file
+
+----------------------------------------- TOTAL_N=20 ------------------------------------------
+
+                                                                             EXEPS_   POWER_
+   SIGSCAL   IP_PLAN   EPSILON   EXEPS_HF   POWER_HF   EXEPS_GG   POWER_GG     BOX      BOX
+
+     0.5        0        0.28      0.28       1.00       0.28       1.00      0.25     1.00
+     0.5        0        0.51      0.51       1.00       0.46       1.00      0.25     1.00
+     0.5        0        0.72      0.72       1.00       0.62       1.00      0.25     1.00
+     0.5        0        1.00      1.00       1.00       0.81       1.00      0.25     1.00
+     1.0        0        0.28      0.28       0.85       0.28       0.84      0.25     0.81
+     1.0        0        0.51      0.51       0.95       0.46       0.94      0.25     0.82
+     1.0        0        0.72      0.72       0.96       0.62       0.95      0.25     0.80
+     1.0        0        1.00      1.00       0.98       0.81       0.97      0.25     0.80
+     2.0        0        0.28      0.28       0.39       0.28       0.39      0.25     0.35
+     2.0        0        0.51      0.51       0.59       0.46       0.56      0.25     0.33
+     2.0        0        0.72      0.72       0.68       0.62       0.64      0.25     0.32
+     2.0        0        1.00      1.00       0.75       0.81       0.71      0.25     0.32
+              Example9.SAS-- Power within the context of an internal pilot design
+
+                              Power computed for a non-IP design
+                              Table III, Coffey and Muller (2003)
+
+----------------------------------------- TOTAL_N=20 ------------------------------------------
+
+                           EPSILON    GAMMA    POWER_GG    POWER_HF
+
+                             0.28      0.5       1.00        1.00
+                             0.51      0.5       1.00        1.00
+                             0.72      0.5       1.00        1.00
+                             1.00      0.5       1.00        1.00
+                             0.28      1.0       0.84        0.85
+                             0.51      1.0       0.94        0.95
+                             0.72      1.0       0.95        0.96
+                             1.00      1.0       0.97        0.98
+                             0.28      2.0       0.39        0.39
+                             0.51      2.0       0.56        0.59
+                             0.72      2.0       0.64        0.68
+                             1.00      2.0       0.71        0.75
+              Example9.SAS-- Power within the context of an internal pilot design
+
+                                Power computed for an IP design
+                                       All data in file
+
+----------------------------------------- TOTAL_N=20 ------------------------------------------
+
+                                                                             EXEPS_   POWER_
+   SIGSCAL   IP_PLAN   EPSILON   EXEPS_HF   POWER_HF   EXEPS_GG   POWER_GG     BOX      BOX
+
+     0.5        1        0.28      0.28       1.00       0.28       1.00      0.25     1.00
+     0.5        1        0.51      0.51       1.00       0.46       1.00      0.25     1.00
+     0.5        1        0.72      0.72       1.00       0.62       1.00      0.25     1.00
+     0.5        1        1.00      1.00       1.00       0.81       1.00      0.25     1.00
+     1.0        1        0.28      0.28       0.84       0.28       0.83      0.25     0.81
+     1.0        1        0.51      0.51       0.95       0.46       0.93      0.25     0.81
+     1.0        1        0.72      0.72       0.96       0.62       0.95      0.25     0.79
+     1.0        1        1.00      1.00       0.98       0.81       0.96      0.25     0.79
+     2.0        1        0.28      0.28       0.39       0.28       0.39      0.25     0.35
+     2.0        1        0.51      0.51       0.58       0.46       0.55      0.25     0.34
+     2.0        1        0.72      0.72       0.67       0.62       0.63      0.25     0.33
+     2.0        1        1.00      1.00       0.74       0.81       0.70      0.25     0.33
+              Example9.SAS-- Power within the context of an internal pilot design
+
+                                Power computed for an IP design
+                              Table III, Coffey and Muller (2003)
+
+----------------------------------------- TOTAL_N=20 ------------------------------------------
+
+                           EPSILON    GAMMA    POWER_GG    POWER_HF
+
+                             0.28      0.5       1.00        1.00
+                             0.51      0.5       1.00        1.00
+                             0.72      0.5       1.00        1.00
+                             1.00      0.5       1.00        1.00
+                             0.28      1.0       0.83        0.84
+                             0.51      1.0       0.93        0.95
+                             0.72      1.0       0.95        0.96
+                             1.00      1.0       0.96        0.98
+                             0.28      2.0       0.39        0.39
+                             0.51      2.0       0.55        0.58
+                             0.72      2.0       0.63        0.67
+                             1.00      2.0       0.70        0.74

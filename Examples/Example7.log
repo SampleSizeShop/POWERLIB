@@ -1,0 +1,573 @@
+
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example7.sas -- Confidence limits for a UNIREP test in a multivariate model with
+3  ! plots";
+4
+5    LIBNAME IN01 "&ROOT.\Data\";
+NOTE: Libref IN01 was successfully assigned as follows:
+      Engine:        V9
+      Physical Name: C:\JLJ\Research\Projects In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Data
+6
+7    ***************************************************;
+8    * Delete data sets for power values if they exist *;
+9    ***************************************************;
+10
+11   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+12   DELETE ONE ONECL ;
+13   RUN;
+
+NOTE: The file WORK.ONE (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.ONECL (memtype=DATA) was not found, but appears on a DELETE statement.
+13 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.06 seconds
+      cpu time            0.06 seconds
+
+
+14
+15   **************************************;
+16   * Section that computes power values *;
+17   **************************************;
+18
+19   PROC IML SYMSIZE=2000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+20   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5431
+5432  OPT_ON = {GG HF BOX UN TOTAL_N ORTHU NOPRINT};
+5433  OPT_OFF={WARN ALPHA};
+5434
+5435  USE IN01.EX7;
+5436  READ ALL VAR {ANT LEFT POST RIGHT} WHERE(_TYPE_ = "COV") INTO INSIGMA;
+5436!                                                                         *Importing
+5436! covariance matrix of data*;
+5437
+5438  * Rounding and viewing covariance matrix *;
+5439
+5440  RNM={ANT LEFT POST RIGHT};
+5441  ALPHA = .05/6;
+5442  SIGMA = ROUND(INSIGMA,.0001);
+5443  PRINT SIGMA[FORMAT=11.5 COLNAME=RNM];
+5444
+5445  * Define input matrices for power calcuations *;
+5446
+5447  ESSENCEX = I(10);
+5448  REPN =DO(1,10,1);
+5449
+5450  P = 4;
+5451  Q = 2;
+5452  * Pattern of means for Gender by Region *;
+5453  BETARG= J(2,4, 3.2) + {.30}#({ -1  0 1  0,
+5454                                 -1  0 1  0}) ;
+5455  PRINT BETARG[COLNAME=RNM];
+5456  BETASCAL={1};
+5457
+5458  C = {1 -1} @ J(1,5,1);
+5459
+5460  REGION = {1,2,3,4};
+5461  RUN UPOLY1(REGION,"REGION",U1,REGU);
+5462  U=U1;
+5463
+5464  DO DELTA=0 TO .20 BY .0008;
+5465    * Creation of Beta matrix based on varying Gender differences *;
+5466    BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));
+5467    * Final Beta matrix with age groups added *;
+5468    BETA= BETARGD @ J(5,1,1) ;
+5469    RUN POWER;
+5470    HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
+5471  END;
+5472
+5473  **************************************************************;
+5474  * Create dataset without confidence limits                   *;
+5475  * Create dataset manually so can appropriately label columns *;
+5476  **************************************************************;
+5477
+5478  NAMES={"SIGSC" "BETASC" "N" "P_MULT" "EPS" "EXEPS_UN" "P_UN" "EXEPS_HF" "P_HF" "EXEPS_GG"
+5478!  "P_GG" "EXEPS_BOX" "P_BOX" "DELTA"};
+5479  CREATE ONE FROM HOLDALL [COLNAME = NAMES];
+5480  APPEND FROM HOLDALL;
+5481  CLOSE ONE;
+NOTE: The data set WORK.ONE has 2510 observations and 14 variables.
+5482
+5483  OPT_OFF={UN BOX HF WLK PBT HLT WARN ALPHA CLTYPE BETASCAL SIGSCAL ALPHA_CL ALPHA_CU};
+5484  OPT_ON={GG ORTHU NOPRINT};
+5485
+5486  REPN={2,4,8};
+5487
+5488  ****************************************************;
+5489  * Create dataset with values for confidence limits *;
+5490  ****************************************************;
+5491
+5492  CLTYPE = 1;
+5492!                 *Estimated variance only, with fixed means*;
+5493  N_EST = 21;
+5493!                 *# Obs for variance estimate*;
+5494  RANK_EST = 1;
+5494!                 *# Model DF for study giving variance estimate*;
+5495  ALPHA_CL = .025;
+5495!                     *Lower confidence limit tail size*;
+5496  ALPHA_CU = .025;
+5496!                     *Upper confidence limit tail size*;
+5497
+5498  FREE HOLDALL;
+5499  DO DELTA=0 TO .20 BY .0008;
+5500    * Creation of Beta matrix based on varying Gender differences *;
+5501    BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));
+5502    * Final Beta matrix with age groups added *;
+5503    BETA= BETARGD @ J(5,1,1) ;
+5504    RUN POWER;
+5505    HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
+5506  END;
+5507
+5508  NAMES = _HOLDPOWERLBL || "DELTA";
+5509  CREATE ONECL FROM HOLDALL [COLNAME = NAMES];
+5510  APPEND FROM HOLDALL;
+5511  CLOSE ONECL;
+NOTE: The data set WORK.ONECL has 753 observations and 8 variables.
+5512
+5513  QUIT;
+NOTE: Exiting IML.
+NOTE: 74 workspace compresses.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           1.43 seconds
+      cpu time            1.42 seconds
+
+
+5514
+5515  ************************************;
+5516  * Section that creates the 3D plot *;
+5517  ************************************;
+5518
+5519  DATA TWO;
+5520  N=100; DELTA=0; P_GG=0;     *Create 'dummy' entry for graph*;
+5521  RUN;
+
+NOTE: The data set WORK.TWO has 1 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.06 seconds
+      cpu time            0.00 seconds
+
+
+5522
+5523  DATA THREE;
+5524  SET ONE TWO;
+5525  KEEP N P_GG DELTA;
+5526  RUN;
+
+NOTE: There were 2510 observations read from the data set WORK.ONE.
+NOTE: There were 1 observations read from the data set WORK.TWO.
+NOTE: The data set WORK.THREE has 2511 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5527
+5528  *Delete any existing graphs;
+5529  PROC DATASETS LIBRARY=WORK MEMTYPE=CATALOG NOLIST NODETAILS;
+5530  DELETE GSEG ;
+5531  RUN;
+
+NOTE: The file WORK.GSEG (memtype=CATALOG) was not found, but appears on a DELETE statement.
+5531!      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5532
+5533  FILENAME OUT01 "&ROOT.\Examples\Example7A.png";
+5534  GOPTIONS GSFNAME=OUT01 DEVICE=PNG  CBACK=WHITE COLORS=(BLACK)
+5535      HSIZE=6.67IN VSIZE=5IN HTEXT=16PT;
+5536
+5537  %MACRO G3GRID(VAR1=, VAR2=, VAR3=);
+5538
+5539  TITLE1;
+5540  PROC G3GRID DATA = THREE OUT = FOUR;
+5541      GRID &VAR1*&VAR2 = &VAR3/
+5542          SPLINE NAXIS1=16 NAXIS2=11;
+5543  RUN;
+5544
+5545  %MEND;
+5546
+5547  %MACRO G3D(VAR1=, VAR2=, VAR3=, ZMAX=, ZTICKNUM=, XTICKNUM=, SIDE=);
+5548
+5549  TITLE1;
+5550  PROC G3D DATA = FOUR GOUT = FIVE;
+5551      PLOT &VAR1*&VAR2 = &VAR3/
+5552          ZMIN=0 ZMAX=&ZMAX ZTICKNUM=&ZTICKNUM YTICKNUM=5 XTICKNUM=&XTICKNUM &SIDE;
+5553      LABEL P_GG = "Power" DELTA="Delta";
+5554  RUN;
+5555
+5556  %MEND;
+5557
+5558  *Each PROC G3GRID call takes a few minutes to run;
+5559
+5560  *Plot 1 of 3;
+5561  %G3GRID(VAR1=DELTA, VAR2=N, VAR3=P_GG);
+
+WARNING: Repeated values for a point.
+NOTE: There were 2511 observations read from the data set WORK.THREE.
+NOTE: The data set WORK.FOUR has 176 observations and 3 variables.
+NOTE: PROCEDURE G3GRID used (Total process time):
+      real time           1:39.91
+      cpu time            1:39.90
+
+
+5562  %G3D(VAR1=DELTA, VAR2=N, VAR3=P_GG, ZMAX=1.0, ZTICKNUM=6, XTICKNUM=5);
+
+WARNING: Some data values are not in the range of ZMIN= and
+         ZMAX=, and are clipped.
+NOTE: 9 records written to C:\JLJ\Research\Projects In
+      Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\EXAMPLE7A.png.
+NOTE: PROCEDURE G3D used (Total process time):
+      real time           0.34 seconds
+      cpu time            0.20 seconds
+
+
+5563
+5564  *Plot 2 of 3;
+5565  %G3GRID(VAR1=DELTA, VAR2=P_GG, VAR3=N);
+
+WARNING: Repeated values for a point.
+NOTE: There were 2511 observations read from the data set
+      WORK.THREE.
+NOTE: The data set WORK.FOUR has 176 observations and 3
+      variables.
+NOTE: PROCEDURE G3GRID used (Total process time):
+      real time           3:13.49
+      cpu time            3:13.65
+
+
+5566  %G3D(VAR1=DELTA, VAR2=P_GG, VAR3=N, ZMAX=100, ZTICKNUM=6,
+5566! XTICKNUM=6, SIDE=SIDE);
+
+WARNING: Some data values are not in the range of ZMIN= and
+         ZMAX=, and are clipped.
+NOTE: 8 records written to C:\JLJ\Research\Projects In
+      Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\EXAMPLE7A.png.
+NOTE: PROCEDURE G3D used (Total process time):
+      real time           0.28 seconds
+      cpu time            0.21 seconds
+
+
+5567
+5568  *Plot 3 of 3;
+5569  %G3GRID(VAR1=N, VAR2=P_GG, VAR3=DELTA);
+
+WARNING: Repeated values for a point.
+NOTE: There were 2511 observations read from the data set
+      WORK.THREE.
+NOTE: The data set WORK.FOUR has 176 observations and 3
+      variables.
+NOTE: PROCEDURE G3GRID used (Total process time):
+      real time           2:30.16
+      cpu time            2:30.39
+
+
+5570  %G3D(VAR1=N, VAR2=P_GG, VAR3=DELTA, ZMAX=0.2, ZTICKNUM=5,
+5570! XTICKNUM=6, SIDE=SIDE);
+
+WARNING: Some data values are not in the range of ZMIN= and
+         ZMAX=, and are clipped.
+NOTE: 8 records written to C:\JLJ\Research\Projects In
+      Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\EXAMPLE7A.png.
+NOTE: PROCEDURE G3D used (Total process time):
+      real time           0.28 seconds
+      cpu time            0.18 seconds
+
+
+5571
+5572  PROC GREPLAY IGOUT=FIVE TC=TEMPCAT NOFS;
+NOTE: Building list of graphs from the catalog.
+
+NOTE: Enter greplay commands or statements.
+5573  TDEF TEMP2BY2 DES="2 rows, 2 columns (3 plots)"
+5574   1/LLX= 25 ULX= 25 LRX= 75 URX= 75   LLY=50 ULY=100 LRY=50
+5574!  URY=100
+5575   2/LLX= 0 ULX= 0 LRX= 50 URX= 50   LLY=0 ULY=50 LRY=0
+5575! URY=50
+5576   3/LLX= 50 ULX= 50 LRX= 100 URX= 100   LLY=0 ULY=50 LRY=0
+5576! URY=50;
+5577  TEMPLATE TEMP2BY2;
+5578  TREPLAY 1:G3D  2:G3D1 3:G3D2;
+NOTE: 10 records written to C:\JLJ\Research\Projects In
+      Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\EXAMPLE7A.png.
+5579  RUN;
+
+5579!     QUIT;
+
+NOTE: PROCEDURE GREPLAY used (Total process time):
+      real time           0.40 seconds
+      cpu time            0.21 seconds
+
+
+5580
+5581  **********************************************************
+5581! ***********************************;
+5582  * Section that creates a plot of values of gender*region
+5582! differences that achieve 90% power *;
+5583  **********************************************************
+5583! ***********************************;
+5584
+5585  FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6B.png";
+5586
+5587  *Extracts data with GG power >= 0.89;
+5588  DATA SIX;
+5589  SET THREE;
+5590  IF N = 100 AND P_GG >= 0.89;
+5591  KEEP N P_GG DELTA;
+5592  RUN;
+
+NOTE: There were 2511 observations read from the data set
+      WORK.THREE.
+NOTE: The data set WORK.SIX has 151 observations and 3
+      variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+
+
+5593
+5594  *Creates dataset for Beta plot;
+5595  PROC IML SYMSIZE=2000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+5596
+5597  USE SIX;
+5598  READ ALL VAR {DELTA} INTO INDELTA;
+5599
+5600  BETARG= J(2,4, 3.2) + {.30}#({ -1  0 1  0,
+5601                                 -1  0 1  0});
+5602
+5603  DELTA = INDELTA[1,1];
+5603!                       * Value of delta for which power is
+5603! approx. 90% *;
+5604  BETARGD=(BETARG +
+5604! (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0)))`;
+5605  HOLD1= BETARGD[,1]//BETARGD[,2];
+5606  HOLD2=((DO(1,4,1))`) // ((DO(1,4,1))`) ;
+5607  HOLD3=J(4,1,1)//J(4,1,2);
+5608  HOLD=HOLD1||HOLD2||HOLD3;
+5609  HNAMES={"SOAM1" "IREGION" "GENDER"};
+5610  CREATE SEVEN FROM HOLD [COLNAME = HNAMES];
+5611  APPEND FROM HOLD;
+5612  CLOSE SEVEN;
+NOTE: The data set WORK.SEVEN has 8 observations and 3
+      variables.
+5613
+5614  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.04 seconds
+      cpu time            0.04 seconds
+
+
+5615
+5616  PROC FORMAT;
+5617  VALUE IREGION 1="Ant" 2="LMid" 3="Post" 4="RMid";
+NOTE: Format IREGION has been output.
+5618  VALUE GENDER 1="Male" 2="Female";
+NOTE: Format GENDER has been output.
+5619  RUN;
+
+NOTE: PROCEDURE FORMAT used (Total process time):
+      real time           0.07 seconds
+      cpu time            0.01 seconds
+
+
+5620
+5621  ODS GRAPHICS / IMAGENAME="Example7B";
+5622  ODS LISTING GPATH="&ROOT.\Examples";
+5623
+5624  TITLE1;
+5625  PROC SGPLOT DATA=SEVEN;
+5626    SERIES Y=SOAM1 X=IREGION/ GROUP=GENDER MARKERS
+5627                              MARKERATTRS=(SIZE=12PT);
+5628  LABEL IREGION="Region of the Brain" GENDER="Gender";
+5629  FORMAT IREGION IREGION. GENDER GENDER.;
+5630  XAXIS VALUES=(1 TO 4 BY 1) VALUEATTRS=(SIZE=12PT)
+5631      LABELATTRS=(SIZE=12PT);
+5632  YAXIS VALUES=(2.75 TO 3.75 BY 0.25) VALUEATTRS=(SIZE=12PT)
+5633      LABELATTRS=(SIZE=12PT);
+5634  KEYLEGEND /TITLE="Gender" VALUEATTRS=(SIZE=12PT)
+5634! TITLEATTRS=(SIZE=12PT);
+5635  RUN;
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.62 seconds
+      cpu time            0.12 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects
+      In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\Example7B.png.
+NOTE: There were 8 observations read from the data set
+      WORK.SEVEN.
+
+5636  QUIT;
+5637
+5638  **********************************************************
+5638! **************;
+5639  * Section that creates an overlay plot of power for three
+5639! sample sizes *;
+5640  **********************************************************
+5640! **************;
+5641
+5642  FILENAME OUT01 "&ROOT.\Examples\EXAMPLE6C.png";
+5643
+5644  PROC SORT DATA=ONE OUT=EIGHT;
+5645  BY N DELTA;
+5646  RUN;
+
+NOTE: There were 2510 observations read from the data set
+      WORK.ONE.
+NOTE: The data set WORK.EIGHT has 2510 observations and 14
+      variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+
+
+5647
+5648  DATA NINE;
+5649  MERGE EIGHT( WHERE=(N=20) RENAME=(P_GG=P20) )
+5650      EIGHT( WHERE=(N=40) RENAME=(P_GG=P40) )
+5651      EIGHT( WHERE=(N=80) RENAME=(P_GG=P80) );
+5652  RUN;
+
+NOTE: There were 251 observations read from the data set
+      WORK.EIGHT.
+      WHERE N=20;
+NOTE: There were 251 observations read from the data set
+      WORK.EIGHT.
+      WHERE N=40;
+NOTE: There were 251 observations read from the data set
+      WORK.EIGHT.
+      WHERE N=80;
+NOTE: The data set WORK.NINE has 251 observations and 16
+      variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.01 seconds
+
+
+5653
+5654  ODS GRAPHICS / IMAGENAME="Example7C";
+5655  ODS LISTING GPATH="&ROOT.\Examples" ;
+5656
+5657  TITLE1;
+5658  PROC SGPLOT DATA=NINE ;
+5659  PBSPLINE Y=P20 X=DELTA / LINEATTRS=(COLOR=BLACK PATTERN=8)
+5659!  NOMARKERS
+5660                                NAME="P20" LEGENDLABEL="20";
+5661  PBSPLINE Y=P40 X=DELTA / LINEATTRS=(COLOR=BLACK PATTERN=4)
+5661!  NOMARKERS
+5662                                NAME="P40" LEGENDLABEL="40";
+5663  PBSPLINE Y=P80 X=DELTA / LINEATTRS=(COLOR=BLACK PATTERN=1)
+5663!  NOMARKERS
+5664                                NAME="P80" LEGENDLABEL="80";
+5665  LABEL P20="Power" DELTA="Delta" ;
+5666  XAXIS VALUES=(0 TO .2 BY .05) VALUEATTRS=(SIZE=12PT)
+5667      LABELATTRS=(SIZE=12PT);
+5668  YAXIS VALUES=(0 TO 1 BY 0.2) VALUEATTRS=(SIZE=12PT)
+5669      LABELATTRS=(SIZE=12PT);
+5670  KEYLEGEND "P20" "P40" "P80"/ TITLE="Total Sample Size"
+5670! VALUEATTRS=(SIZE=12PT)
+5671      TITLEATTRS=(SIZE=12PT);
+5672  RUN;
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.34 seconds
+      cpu time            0.15 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects
+      In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\Example7C.png.
+NOTE: There were 251 observations read from the data set
+      WORK.NINE.
+
+5673
+5674  **********************************************************
+5674! *************;
+5675  * Section that creates plot with confidence limits for
+5675! power for N=40 *;
+5676  **********************************************************
+5676! *************;
+5677
+5678  ODS GRAPHICS / IMAGENAME="Example7D";
+5679  ODS LISTING GPATH="&ROOT.\Examples" ;
+5680
+5681  TITLE1;
+5682  PROC SGPLOT DATA=ONECL NOAUTOLEGEND;
+5683  WHERE TOTAL_N=40;
+5684  SERIES Y=POWER_GG X=DELTA / LINEATTRS=(COLOR=BLACK
+5684! PATTERN=1) ;
+5685  SERIES Y=POWER_GG_L X=DELTA / LINEATTRS=(COLOR=BLACK
+5685! PATTERN=4) ;
+5686  SERIES Y=POWER_GG_U X=DELTA / LINEATTRS=(COLOR=BLACK
+5686! PATTERN=4) ;
+5687  LABEL POWER_GG="Power" DELTA="Delta" ;
+5688  XAXIS VALUES=(0 TO .2 BY .05) VALUEATTRS=(SIZE=12PT)
+5689      LABELATTRS=(SIZE=12PT);
+5690  YAXIS VALUES=(0 TO 1 BY 0.2) VALUEATTRS=(SIZE=12PT)
+5691      LABELATTRS=(SIZE=12PT);
+5692  RUN;
+
+NOTE: PROCEDURE SGPLOT used (Total process time):
+      real time           0.26 seconds
+      cpu time            0.04 seconds
+
+NOTE: Listing image output written to C:\JLJ\Research\Projects
+      In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Examples\Example7D.png.
+NOTE: There were 251 observations read from the data set
+      WORK.ONECL.
+      WHERE TOTAL_N=40;
+

@@ -1,0 +1,207 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example8.sas -- Point estimate for power of a UNIREP test based on estimated Sigma
+3  !  ";
+4
+5    LIBNAME IN01 "&ROOT.\Data\";
+NOTE: Libref IN01 was successfully assigned as follows:
+      Engine:        V9
+      Physical Name: C:\JLJ\Research\Projects In Progress\POWERLIB\Version 2.2\Examples\For
+      Submission\Data
+6
+7    ***************************************************;
+8    * Delete data sets for power values if they exist *;
+9    ***************************************************;
+10
+11   PROC DATASETS LIBRARY=WORK NOLIST NODETAILS;
+12   DELETE ONE TWO THREE;
+13   RUN;
+
+NOTE: The file WORK.ONE (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.TWO (memtype=DATA) was not found, but appears on a DELETE statement.
+NOTE: The file WORK.THREE (memtype=DATA) was not found, but appears on a DELETE statement.
+13 !      QUIT;
+
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.04 seconds
+
+
+14
+15
+16   PROC IML SYMSIZE=2000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 2048000
+NOTE: IML Ready
+17   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5428
+5429  OPT_ON = {GG HF BOX UN TOTAL_N ORTHU NOPRINT SIGTYPE};
+5430  OPT_OFF={WARN ALPHA WLK PBT HLT};
+5431
+5432  USE IN01.EX7;
+5433  READ ALL VAR {ANT LEFT POST RIGHT} WHERE(_TYPE_ = "COV") INTO INSIGMA;
+5433!                                                                         *Importing
+5433! covariance matrix of data*;
+5434
+5435  * Rounding and viewing covariance matrix *;
+5436
+5437  RNM={ANT LEFT POST RIGHT};
+5438  ALPHA = .05/6;
+5439  SIGMA = ROUND(INSIGMA,.0001);
+5440  PRINT SIGMA[FORMAT=11.5 COLNAME=RNM];
+5441
+5442  * Define input matrices for power calcuations *;
+5443
+5444  ESSENCEX = I(10);
+5445  REPN =DO(2,10,2);
+5446
+5447  P = 4;
+5448  Q = 2;
+5449  * Pattern of means for Gender by Region *;
+5450  BETARG= J(2,4, 3.2) + {.30}#({ -1  0 1  0,
+5451                                 -1  0 1  0}) ;
+5452  PRINT BETARG[COLNAME=RNM];
+5453  BETASCAL={1};
+5454
+5455  C = {1 -1} @ J(1,5,1);
+5456
+5457  REGION = {1,2,3,4};
+5458  RUN UPOLY1(REGION,"REGION",U1,REGU);
+5459  U=U1;
+5460
+5461  **************************************;
+5462  * Compute power based on fixed sigma *;
+5463  **************************************;
+5464
+5465  SIGTYPE=0;
+5465!            *Default, but specified for clarity;
+5466
+5467  DO DELTA=0 TO .20 BY .05;
+5468    * Creation of Beta matrix based on varying Gender differences *;
+5469    BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));
+5470    * Final Beta matrix with age groups added *;
+5471    BETA= BETARGD @ J(5,1,1) ;
+5472    RUN POWER;
+5473    HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
+5474  END;
+5475
+5476  NAMES={"SIGSC" "BETASC" "N" "SIGTYPE" "EPS" "EXEPS_UN" "P_UN" "EXEPS_HF" "P_HF"
+5476! "EXEPS_GG" "P_GG" "EXEPS_BOX" "P_BOX" "DELTA"};
+5477  CREATE ONE FROM HOLDALL [COLNAME = NAMES];
+5478  APPEND FROM HOLDALL;
+5479  CLOSE ONE;
+NOTE: The data set WORK.ONE has 25 observations and 14 variables.
+5480  FREE HOLDALL;
+5481
+5482  ******************************************;
+5483  * Compute power based on estimated sigma *;
+5484  ******************************************;
+5485
+5486  SIGTYPE=1;
+5487  N_EST = 21;
+5487!                 *# Obs for variance estimate*;
+5488  RANK_EST = 1;
+5488!                 *# Model DF for study giving variance estimate*;
+5489
+5490  DO DELTA=0 TO .20 BY .05;
+5491    * Creation of Beta matrix based on varying Gender differences *;
+5492    BETARGD=BETARG + (J(2,2,0)||(DELTA//(-DELTA))||J(2,1,0));
+5493    * Final Beta matrix with age groups added *;
+5494    BETA= BETARGD @ J(5,1,1) ;
+5495    RUN POWER;
+5496    HOLDALL=HOLDALL//( _HOLDPOWER||J(NROW(_HOLDPOWER),1,DELTA) );
+5497  END;
+5498
+5499  NAMES={"SIGSC" "BETASC" "N" "SIGTYPE" "EPS" "EXEPS_UN" "P_UN" "EXEPS_HF" "P_HF"
+5499! "EXEPS_GG" "P_GG" "EXEPS_BOX" "P_BOX" "DELTA"};
+5500  CREATE TWO FROM HOLDALL [COLNAME = NAMES];
+5501  APPEND FROM HOLDALL;
+5502  CLOSE TWO;
+NOTE: The data set WORK.TWO has 25 observations and 14 variables.
+5503
+5504  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.18 seconds
+      cpu time            0.18 seconds
+
+
+5505
+5506  *****************;
+5507  * Print results *;
+5508  *****************;
+5509
+5510  *Stack datasets;
+5511  DATA THREE;
+5512  SET ONE TWO;
+5513  RUN;
+
+NOTE: There were 25 observations read from the data set WORK.ONE.
+NOTE: There were 25 observations read from the data set WORK.TWO.
+NOTE: The data set WORK.THREE has 50 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5514
+5515  PROC SORT DATA=THREE;
+5516  BY SIGSC BETASC DELTA N SIGTYPE;
+5517  RUN;
+
+NOTE: There were 50 observations read from the data set WORK.THREE.
+NOTE: The data set WORK.THREE has 50 observations and 14 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+
+5518
+5519  TITLE3 "Compare power with fixed (SIGTYPE=0) and estimated (SIGTYPE=1) Sigma";
+5520  PROC PRINT DATA=THREE NOOBS;
+5521  BY SIGSC BETASC DELTA;
+5522  RUN;
+
+NOTE: There were 50 observations read from the data set WORK.THREE.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+
+

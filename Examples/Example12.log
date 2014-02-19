@@ -1,0 +1,289 @@
+2    OPTIONS NODATE NONUMBER PS=55 LS=95;
+3    TITLE1 "Example12.sas -- Illustrate use of the UPOLY3 module";
+4    TITLE2 "Factorial design, repeated measures: A, B, C between, D, E, F within";
+5
+6    ********************************************************************;
+7    * Section that creates contrast matrices without the UPOLY3 module *;
+8    ********************************************************************;
+9
+10   TITLE3 "UPOLY3 module not used";
+11   PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+12   RESET FUZZ NOAUTONAME FW=6 LINESIZE=80;
+13   %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+5424
+5425  ALPHA = .05;
+5426
+5427  * Choose dimensions of design *;
+5428  GA = 3;
+5428!         * =# groups for between factor A *;
+5429  GB = 3;
+5429!         * =# groups for between factor B *;
+5430  GC = 3;
+5430!         * =# groups for between factor C *;
+5431  TD = 3;
+5431!         * =#Times for within factor D *;
+5432  TE = 3;
+5432!         * =#Times for within factor E *;
+5433  TF = 3;
+5433!         * =#Times for within factor F *;
+5434
+5435  P = TD#TE#TF;
+5436  Q = GA#GB#GC;
+5437  ESSENCEX = I(Q);
+5438  BETA = J(Q,P,0);
+5439  BETA[1,1] = 1;
+5440
+5441  SIGMA=DIAG(DO(1,P,1));
+5441!                       * Variances are 1,2,3,...p *;
+5442
+5443  * Get orthonormal submatrices for U matrices *;
+5444  POLYD = ORPOL(1:TD);
+5445  UD1 = POLYD[,2:NCOL(POLYD)]`;
+5446  POLYE = ORPOL(1:TE);
+5447  UE1 = POLYE[,2:NCOL(POLYE)]`;
+5448  POLYF = ORPOL(1:TF);
+5449  UF1 = POLYF[,2:NCOL(POLYF)]`;
+5450
+5451  * U matrix for Main effect D *;
+5452  UD = (UD1 @ J(1,TE,1) @ J(1,TF,1))`;
+5453
+5454  * U matrix for Main effect E *;
+5455  UE = (J(1,TD,1) @ UE1 @ J(1,TF,1))`;
+5456
+5457  * U matrix for Main effect F *;
+5458  UF = (J(1,TD,1) @ J(1,TE,1) @ UF1)`;
+5459
+5460  * U matrix for DxE interaction *;
+5461  UDE = HDIR(UD,UE);
+5462
+5463  * U matrix for DxExF interaction *;
+5464  UDEF = HDIR(UDE,UF);
+5465
+5466  * Get submatrices for between factors *;
+5467  CA1 = J(GA-1,1,-1)||I(GA-1);
+5468  CB1 = J(GB-1,1,-1)||I(GB-1);
+5469  CC1 = J(GC-1,1,-1)||I(GC-1);
+5470
+5471  * Main effect A *;
+5472  CA = CA1 @ J(1,GB,1) @ J(1,GC,1);
+5473
+5474  * Main effect B *;
+5475  CB = J(1,GA,1) @ CB1 @ J(1,GC,1);
+5476
+5477  * Main effect C[FORMAT=2.] *;
+5478  CC = J(1,GA,1) @ J(1,GB,1) @ CC1;
+5479
+5480  * AxB interaction *;
+5481  CAB = (HDIR(CA`,CB`))`;
+5482
+5483  * AxBxC interaction *;
+5484  CABC = (HDIR(CAB`,CC`))`;
+5485
+5486  BETASCAL = {9 18 27};
+5487  ROUND = 4;
+5488  OPT_ON = {NOPRINT  GG HF UN  PBT HLT WLK};
+5489  OPT_OFF = {WARN SIGSCAL ALPHA};
+5490  BUG = " ";
+5491
+5492  C = CA;
+5493  U = UD;
+5494    DO REPN = 2 TO 12 BY 2;
+5495    RUN POWER;
+5496    HOLDA=HOLDA//_HOLDPOWER;
+5497    END;
+5498  PRINT / "AxD";
+5499  PRINT HOLDA[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+5500
+5501  C = CAB;
+5502  U = UDE;
+5503    DO REPN=2 TO 12 BY 2;
+5504    RUN POWER;
+5505    HOLDABDE=HOLDABDE//_HOLDPOWER;
+5506    END;
+5507  PRINT / "AxB x DxE Interaction";
+5508  PRINT HOLDABDE[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+5509
+5510  C = CABC;
+5511  U = UDEF;
+5512    DO REPN=2 TO 12 BY 2;
+5513    RUN POWER;
+5514    HABCDEF=HABCDEF//_HOLDPOWER;
+5515    END;
+5516  PRINT / "AxBxC x DxExF Interaction";
+5517  PRINT HABCDEF[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+5518
+5519  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.40 seconds
+      cpu time            0.28 seconds
+
+
+5520
+5521  *****************************************************************;
+5522  * Section that creates contrast matrices with the UPOLY3 module *;
+5523  *****************************************************************;
+5524
+5525  TITLE3 "UPOLY3 module used to create contrast matrices";
+5526
+5527  PROC IML SYMSIZE=1000 WORKSIZE=2000;
+NOTE: Worksize    = 2048000
+NOTE: Symbol size = 1024000
+NOTE: IML Ready
+5528  RESET FUZZ NOAUTONAME FW=6 LINESIZE=80;
+5529  %INCLUDE "&ROOT.\IML\POWERLIB22.IML"/NOSOURCE2;
+NOTE: Module POWER defined.
+NOTE: Module _POWER defined.
+NOTE: Module _RANKSYMM defined.
+NOTE: Module _SIZECHK defined.
+NOTE: Module _TYPEMISSCHK defined.
+NOTE: Module _SETOPT defined.
+NOTE: Module _HLT defined.
+NOTE: Module _PBT defined.
+NOTE: Module _WLK defined.
+NOTE: Module _SPECIAL defined.
+NOTE: Module _FIRSTUNI defined.
+NOTE: Module _HFEXEPS defined.
+NOTE: Module _CMEXEPS defined.
+NOTE: Module _GGEXEPS defined.
+NOTE: Module _LASTUNI defined.
+NOTE: Module _GLMMPCL defined.
+NOTE: Module _PROBF defined.
+NOTE: Module _FINV defined.
+NOTE: Module _FWARN defined.
+NOTE: Module _SASDS defined.
+NOTE: Module _QPROB defined.
+NOTE: Module _AS defined.
+NOTE: Module _IROUND defined.
+NOTE: Module _COUNTR defined.
+NOTE: Module _ALOG1 defined.
+NOTE: Module _EXP1 defined.
+NOTE: Module _ORDER defined.
+NOTE: Module _ERRBD defined.
+NOTE: Module _CTFF defined.
+NOTE: Module _TRUNCN defined.
+NOTE: Module _FINDU defined.
+NOTE: Module _INTEGR defined.
+NOTE: Module _CFE defined.
+NOTE: Module NAMELIST defined.
+NOTE: Module UMEAN defined.
+NOTE: Module UPOLY1 defined.
+NOTE: Module UPOLY2 defined.
+NOTE: Module UPOLY3 defined.
+10940
+10941  ALPHA = .05;
+10942
+10943  * Choose dimensions of design *;
+10944  GA = 3;
+10944!         * =# groups for between factor A *;
+10945  GB = 3;
+10945!         * =# groups for between factor B *;
+10946  GC = 3;
+10946!         * =# groups for between factor C *;
+10947  TD = 3;
+10947!         * =#Times for within factor D *;
+10948  TE = 3;
+10948!         * =#Times for within factor E *;
+10949  TF = 3;
+10949!         * =#Times for within factor F *;
+10950
+10951  P = TD#TE#TF;
+10952  Q = GA#GB#GC;
+10953  ESSENCEX = I(Q);
+10954  BETA = J(Q,P,0);
+10955  BETA[1,1] = 1;
+10956
+10957  SIGMA = DIAG(DO(1,P,1));
+10957!                          * Variances are 1,2,3,...p *;
+10958
+10959  * Get orthonormal U matrices *;
+10960  CALL UPOLY3 ( (1:TD),"D", (1:TE),"E",  (1:TF),"F",
+10961                    UD,UDLBL,   UE,UELBL,    UF,UFLBL,
+10962                   UDE,UDELBL, UDF,UDFLBL,  UEF,UEFLBL,  UDEF,UDEFLBL );
+10963
+10964  * Get orthonormal C matrices *;
+10965  CALL UPOLY3 ((1:GA),"A" , (1:GB),"B" , (1:GC),"C",
+10966                   U1,CALBL,    U2,CBLBL,    U3,CCLBL,
+10967                  U12,CABLBL, U13,CACLBL,   U23,CBCLBL,  U123,CABCLBL);
+10968
+10969  BETASCAL = {9 18 27};
+10970  ROUND = 4;
+10971  OPT_ON = {NOPRINT  GG HF UN  PBT HLT WLK};
+10972  OPT_OFF = {WARN SIGSCAL ALPHA};
+10973  BUG=" ";
+10974
+10975  C = U1`;
+10976  U = UD;
+10977    DO REPN = 2 TO 12 BY 2;
+10978    RUN POWER;
+10979    HOLDA=HOLDA//_HOLDPOWER;
+10980    END;
+10981  PRINT / "AxD";
+10982  PRINT HOLDA[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+10983
+10984  C = U12`;
+10985  U = UDE;
+10986    DO REPN = 2 TO 12 BY 2;
+10987    RUN POWER;
+10988    HOLDABDE = HOLDABDE//_HOLDPOWER;
+10989    END;
+10990  PRINT / "AxB x DxE Interaction";
+10991  PRINT HOLDABDE[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+10992
+10993  C = U123`;
+10994  U = UDEF;
+10995    DO REPN = 2 TO 12 BY 2;
+10996    RUN POWER;
+10997    HABCDEF = HABCDEF//_HOLDPOWER;
+10998    END;
+10999  PRINT / "AxBxC x DxExF Interaction";
+11000  PRINT HABCDEF[COLNAME=_HOLDPOWERLBL ROWNAME=BUG];
+11001
+11002  QUIT;
+NOTE: Exiting IML.
+NOTE: PROCEDURE IML used (Total process time):
+      real time           0.23 seconds
+      cpu time            0.23 seconds
+
+
